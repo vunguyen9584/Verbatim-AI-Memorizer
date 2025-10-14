@@ -1,0 +1,88 @@
+export enum LearningMode {
+  QUIZ = 'Quiz',
+  PLAY = 'Play',
+  CO_PLAY = 'Co-Play'
+}
+
+// --- QUIZ TYPES ---
+
+// Shared
+export interface QuizItemBase {
+  type: 'cloze_by_token' | 'typed_exact' | 'mcq_cloze' | 'ordering';
+  stem: string;
+}
+
+// Cloze (Fill-in-the-blank)
+export interface ClozeBlank {
+  answer_tokens: number[];
+  answer_text: string;
+}
+
+export interface ClozeQuizItem extends QuizItemBase {
+  type: 'cloze_by_token';
+  base_text_with_masks: string;
+  blanks: ClozeBlank[];
+}
+
+// Typed Exact
+export interface TypedExactQuizItem extends QuizItemBase {
+  type: 'typed_exact';
+  answer_span: number[];
+  tolerance: {
+    case: boolean;
+    punctuation: boolean;
+  };
+}
+
+// Multiple Choice Cloze
+export interface MCQOption {
+    text: string;
+}
+
+export interface MCQQuizItem extends QuizItemBase {
+    type: 'mcq_cloze';
+    base_text_with_masks: string;
+    options: MCQOption[];
+    answer_index: number;
+}
+
+// Ordering
+export interface OrderingQuizItem extends QuizItemBase {
+    type: 'ordering';
+    scrambled_words: string[];
+    answer_span: [number, number];
+}
+
+
+export type QuizItem = ClozeQuizItem | TypedExactQuizItem | MCQQuizItem | OrderingQuizItem;
+
+export interface QuizData {
+  quizzes: QuizItem[];
+}
+
+export interface ErrorExplanation {
+  summary: string;
+  annotations: {
+    type: string;
+    at_chars?: number[];
+    tokens?: string[];
+    example?: string;
+  }[];
+  tip: string;
+}
+
+
+// --- CO-PLAY TYPES ---
+export interface CoPlayPauseRequire {
+  span: [number, number];
+}
+
+export interface CoPlayTimelineItem {
+  reveal_until_token: number;
+  pause_require: CoPlayPauseRequire[];
+  hint_policy?: string;
+}
+
+export interface CoPlayPlan {
+  timeline: CoPlayTimelineItem[];
+}
