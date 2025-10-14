@@ -6,11 +6,13 @@ import ModeSelector from './components/ModeSelector';
 import QuizMode from './components/QuizMode';
 import PlayMode from './components/PlayMode';
 import CoPlayMode from './components/CoPlayMode';
-import { BrainCircuitIcon } from './components/common/Icon';
+import { BrainCircuitIcon, BugIcon } from './components/common/Icon';
+import DebugPanel from './components/DebugPanel';
 
 const App: React.FC = () => {
   const [text, setText] = useState<string>('');
   const [mode, setMode] = useState<LearningMode | null>(null);
+  const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
 
   const handleTextSubmit = useCallback((submittedText: string) => {
     setText(submittedText);
@@ -50,9 +52,14 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
-      <header className="flex items-center mb-6">
-        <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Verbatim <span className="text-teal-400">AI</span> Memorizer</h1>
+      <header className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Verbatim <span className="text-teal-400">AI</span> Memorizer</h1>
+        </div>
+        <button onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)} className="text-gray-500 hover:text-teal-400 transition-colors" aria-label="Open Debug Panel">
+          <BugIcon className="w-6 h-6" />
+        </button>
       </header>
       
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
@@ -67,6 +74,8 @@ const App: React.FC = () => {
           </div>
         </div>
       </main>
+
+      <DebugPanel isOpen={isDebugPanelOpen} onClose={() => setIsDebugPanelOpen(false)} />
     </div>
   );
 };

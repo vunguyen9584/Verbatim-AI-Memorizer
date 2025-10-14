@@ -1,5 +1,7 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { QuizData, CoPlayPlan } from '../types';
+import { logger } from '../utils/debugLogger';
 
 // Fix: Initialize the GoogleGenAI client to interact with the Gemini API.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -128,11 +130,13 @@ export const generateQuizzes = async (
     Available types:
     - 'cloze_by_token': Fill-in-the-blank style. Provide the base text with '...' masks and define the blanks with their answer text and token indices.
     - 'typed_exact': The user must type an exact part of the text. Provide the token span for the answer.
-    - 'mcq_cloze': A multiple-choice cloze question. Provide the base text with a '...' mask, several options (including the correct one), and the index of the correct answer.
+    - 'mcq_cloze': A multiple-choice cloze question. Provide 'base_text_with_masks', an array of 'options', and CRITICALLY, 'answer_index' which is the zero-based index of the correct option within the 'options' array. Do NOT include a 'blanks' field for this type.
     - 'ordering': Scramble a sequence of words from the text for the user to reorder. Provide the scrambled words and the token span of the correct answer.
 
     Return the output in a JSON object matching the provided schema. Ensure all token indices are accurate based on the tokenization provided. For each quiz object, only include fields relevant to its 'type'.
     `;
+    
+    logger.log('GEMINI_REQUEST', { type: 'generateQuizzes', prompt, options });
     
     try {
         const response = await ai.models.generateContent({
@@ -145,8 +149,14 @@ export const generateQuizzes = async (
         });
 
         const jsonResponse = response.text.trim();
-        return JSON.parse(jsonResponse) as QuizData;
+        logger.log('GEMINI_RESPONSE_RAW', { type: 'generateQuizzes', response: jsonResponse });
+        
+        const parsedData = JSON.parse(jsonResponse) as QuizData;
+        logger.log('GEMINI_RESPONSE_PARSED', { type: 'generateQuizzes', data: parsedData });
+
+        return parsedData;
     } catch (e) {
+        logger.log('GEMINI_ERROR', { type: 'generateQuizzes', error: e });
         console.error("Error generating quizzes:", e);
         throw new Error("Failed to generate quiz. The AI model may be temporarily unavailable.");
     }
@@ -180,6 +190,8 @@ export const planCoPlay = async (text: string, tokens: string[]): Promise<CoPlay
     Return the output in a JSON object matching the provided schema.
     `;
 
+    logger.log('GEMINI_REQUEST', { type: 'planCoPlay', prompt });
+
     try {
         const response = await ai.models.generateContent({
             model,
@@ -191,8 +203,14 @@ export const planCoPlay = async (text: string, tokens: string[]): Promise<CoPlay
         });
 
         const jsonResponse = response.text.trim();
-        return JSON.parse(jsonResponse) as CoPlayPlan;
+        logger.log('GEMINI_RESPONSE_RAW', { type: 'planCoPlay', response: jsonResponse });
+
+        const parsedData = JSON.parse(jsonResponse) as CoPlayPlan;
+        logger.log('GEMINI_RESPONSE_PARSED', { type: 'planCoPlay', data: parsedData });
+        
+        return parsedData;
     } catch (e) {
+        logger.log('GEMINI_ERROR', { type: 'planCoPlay', error: e });
         console.error("Error planning co-play:", e);
         throw new Error("Failed to generate a Co-Play plan. The AI model may be temporarily unavailable.");
     }

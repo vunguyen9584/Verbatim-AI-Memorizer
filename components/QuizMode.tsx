@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo } from 'react';
 import { QuizData, ClozeQuizItem, TypedExactQuizItem, MCQQuizItem, OrderingQuizItem } from '../types';
 import { generateQuizzes } from '../services/geminiService';
@@ -37,6 +38,26 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
 
   const currentQuiz = useMemo(() => quizData?.quizzes[currentQuizIndex], [quizData, currentQuizIndex]);
+
+  // Memoize the correct answer index, deriving it if necessary for MCQs.
+  const correctAnswerIndex = useMemo(() => {
+    if (currentQuiz?.type !== 'mcq_cloze') {
+        return undefined;
+    }
+    const mcqQuiz = currentQuiz as MCQQuizItem;
+    // If answer_index is provided and is a number, use it.
+    if (typeof mcqQuiz.answer_index === 'number') {
+        return mcqQuiz.answer_index;
+    }
+    // If not, derive it from the 'blanks' field. This makes the component robust
+    // as the AI sometimes returns 'blanks' for mcq_cloze instead of answer_index.
+    const correctAnswerText = (mcqQuiz as any).blanks?.[0]?.answer_text;
+    if (correctAnswerText && mcqQuiz.options) {
+        const foundIndex = mcqQuiz.options.findIndex(option => option.text.trim() === correctAnswerText.trim());
+        return foundIndex !== -1 ? foundIndex : undefined;
+    }
+    return undefined; // Cannot determine the index
+  }, [currentQuiz]);
 
   const handleQuizTypeToggle = (typeId: string) => {
     setSelectedQuizTypes(prev =>
@@ -112,8 +133,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         correct = actual.trim() === expected.trim();
         break;
       case 'mcq_cloze':
-        const mcqQuiz = currentQuiz as MCQQuizItem;
-        correct = userAnswer === mcqQuiz.answer_index;
+        correct = userAnswer === correctAnswerIndex;
         break;
       case 'ordering':
         const orderingQuiz = currentQuiz as OrderingQuizItem;
@@ -239,9 +259,14 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         case 'typed_exact':
             const typedQuiz = currentQuiz as TypedExactQuizItem;
             return tokens.slice(typedQuiz.answer_span[0], typedQuiz.answer_span[1] + 1).join('');
-        case 'mcq_cloze':
+        case 'mcq_cloze': {
             const mcqQuiz = currentQuiz as MCQQuizItem;
-            return mcqQuiz.options[mcqQuiz.answer_index].text;
+            if (typeof correctAnswerIndex === 'number') {
+                const answerText = mcqQuiz.options?.[correctAnswerIndex]?.text;
+                return answerText ?? "Answer not available";
+            }
+            return "Answer not available";
+        }
         case 'ordering':
              const orderingQuiz = currentQuiz as OrderingQuizItem;
              return tokens.slice(orderingQuiz.answer_span[0], orderingQuiz.answer_span[1] + 1).join('');

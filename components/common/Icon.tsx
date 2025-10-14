@@ -37,3 +37,16 @@ export const LightbulbIcon: React.FC<IconProps> = (props) => (
         <path d="M10 22h4" />
     </svg>
 );
+
+export const BugIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M14 12a2 2 0 1 0-4 0"/>
+        <path d="M12 17.5a3.5 3.5 0 0 0 3.5-3.5h-7a3.5 3.5 0 0 0 3.5 3.5Z"/>
+        <path d="M12 21a6.5 6.5 0 0 0 6.5-6.5H5.5A6.5 6.5 0 0 0 12 21Z"/>
+        <path d="M12 3v1"/>
+        <path d="m16.5 4.2-1 1.7"/>
+        <path d="m7.5 4.2 1 1.7"/>
+        <path d="M6 8h-3"/>
+        <path d="M18 8h3"/>
+    </svg>
+);
