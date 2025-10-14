@@ -33,6 +33,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   const [userAnswer, setUserAnswer] = useState<any>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
 
   const currentQuiz = useMemo(() => quizData?.quizzes[currentQuizIndex], [quizData, currentQuizIndex]);
@@ -52,6 +53,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     setUserAnswer(null);
     setIsAnswered(false);
     setIsCorrect(false);
+    setShowAnswer(false);
     setCorrectAnswersCount(0);
   };
 
@@ -93,7 +95,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     switch (currentQuiz.type) {
       case 'cloze_by_token':
         const clozeQuiz = currentQuiz as ClozeQuizItem;
-        correct = clozeQuiz.blanks.every((blank, index) => userAnswer[index]?.trim().toLowerCase() === blank.answer_text.trim().toLowerCase());
+        correct = clozeQuiz.blanks.every((blank, index) => (userAnswer[index] || '').trim().toLowerCase() === blank.answer_text.trim().toLowerCase());
         break;
       case 'typed_exact':
         const typedQuiz = currentQuiz as TypedExactQuizItem;
@@ -131,6 +133,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   const handleNext = () => {
     setIsAnswered(false);
     setUserAnswer(null);
+    setShowAnswer(false);
     if (currentQuizIndex < quizData!.quizzes.length - 1) {
       setCurrentQuizIndex(currentQuizIndex + 1);
     } else {
@@ -154,6 +157,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                     <input
                       type="text"
                       className="bg-gray-700 border-2 border-gray-600 rounded-md p-1 mx-1 text-teal-300 w-32 focus:border-teal-500 focus:outline-none"
+                      value={userAnswer?.[index] || ''}
                       disabled={isAnswered}
                       onChange={(e) => {
                         const newAnswers = [...(userAnswer || [])];
@@ -167,7 +171,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
             </div>
         );
       case 'typed_exact':
-        return <input type="text" autoFocus className="w-full bg-gray-700 border-2 border-gray-600 rounded-md p-2 text-teal-300 focus:border-teal-500 focus:outline-none" disabled={isAnswered} onChange={(e) => setUserAnswer(e.target.value)} />;
+        return <input type="text" autoFocus className="w-full bg-gray-700 border-2 border-gray-600 rounded-md p-2 text-teal-300 focus:border-teal-500 focus:outline-none" value={userAnswer || ''} disabled={isAnswered} onChange={(e) => setUserAnswer(e.target.value)} />;
       case 'mcq_cloze':
         const mcqQuiz = currentQuiz as MCQQuizItem;
         return (
@@ -213,13 +217,52 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   const renderFeedback = () => {
     if (!isAnswered) return null;
     return (
-      <div className={`mt-4 p-4 rounded-lg flex items-center gap-3 ${isCorrect ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
-        {isCorrect ? <CheckCircleIcon className="w-6 h-6" /> : <XCircleIcon className="w-6 h-6" />}
-        <span className="font-semibold">{isCorrect ? 'Correct!' : 'Not quite.'}</span>
+      <div className={`mt-4 p-4 rounded-lg flex items-center justify-between gap-3 ${isCorrect ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
+        <div className="flex items-center gap-3">
+            {isCorrect ? <CheckCircleIcon className="w-6 h-6" /> : <XCircleIcon className="w-6 h-6" />}
+            <span className="font-semibold">{isCorrect ? 'Correct!' : 'Not quite.'}</span>
+        </div>
+        {!isCorrect && !showAnswer && (
+            <Button variant="ghost" onClick={() => setShowAnswer(true)}>Show Answer</Button>
+        )}
       </div>
     );
   };
   
+  const getCorrectAnswerText = () => {
+    if (!currentQuiz) return null;
+
+    switch (currentQuiz.type) {
+        case 'cloze_by_token':
+            const clozeQuiz = currentQuiz as ClozeQuizItem;
+            return clozeQuiz.blanks.map(b => `"${b.answer_text}"`).join(', ');
+        case 'typed_exact':
+            const typedQuiz = currentQuiz as TypedExactQuizItem;
+            return tokens.slice(typedQuiz.answer_span[0], typedQuiz.answer_span[1] + 1).join('');
+        case 'mcq_cloze':
+            const mcqQuiz = currentQuiz as MCQQuizItem;
+            return mcqQuiz.options[mcqQuiz.answer_index].text;
+        case 'ordering':
+             const orderingQuiz = currentQuiz as OrderingQuizItem;
+             return tokens.slice(orderingQuiz.answer_span[0], orderingQuiz.answer_span[1] + 1).join('');
+        default:
+            return "Answer not available";
+    }
+  }
+
+  const renderCorrectAnswer = () => {
+    if (!isAnswered || isCorrect || !showAnswer) return null;
+    
+    const answerText = getCorrectAnswerText();
+
+    return (
+        <div className="mt-4 p-4 rounded-lg bg-gray-700/50 text-gray-300">
+            <p className="font-semibold text-teal-400">Correct Answer:</p>
+            <p className="mt-1 text-lg whitespace-pre-wrap">{answerText}</p>
+        </div>
+    )
+  }
+
   const renderSetup = () => (
     <div className="p-4 md:p-8 flex flex-col h-full justify-center">
         <h2 className="text-2xl font-bold text-teal-400 mb-2 text-center">Quiz Setup</h2>
@@ -293,6 +336,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
           </div>
     
           {renderFeedback()}
+          {renderCorrectAnswer()}
     
           <div className="mt-auto pt-6 border-t border-gray-700/50 flex justify-end gap-3">
             {!isAnswered ? (
