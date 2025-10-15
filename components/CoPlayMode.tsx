@@ -91,10 +91,10 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
       <h2 className="text-2xl font-bold text-teal-400 mb-6">Co-Play Mode</h2>
       
       <div className="flex-grow bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 mb-6">
-        <p className="text-xl leading-loose">
+        <p className="text-xl leading-loose whitespace-pre-wrap">
           <span className="text-teal-300">{getRevealedText()}</span>
           {isPaused && currentTimelineItem?.pause_require.length > 0 && <span className="bg-teal-500/20 text-teal-200 p-1 rounded-md animate-pulse">...</span>}
-          <span className="text-gray-500">{getHiddenText()}</span>
+          <span className="text-transparent">{getHiddenText()}</span>
         </p>
       </div>
 

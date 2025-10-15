@@ -8,7 +8,7 @@ interface PlayModeProps {
 
 const PlayMode: React.FC<PlayModeProps> = ({ tokens }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [wpm, setWpm] = useState(150);
+  const [wpm, setWpm] = useState(200);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const timerRef = useRef<number | null>(null);
 
@@ -46,12 +46,12 @@ const PlayMode: React.FC<PlayModeProps> = ({ tokens }) => {
       <h2 className="text-2xl font-bold text-teal-400 mb-6">Play Mode</h2>
       
       <div className="flex-grow bg-gray-900/50 p-6 rounded-lg border border-gray-700/50">
-        <p className="text-xl leading-loose">
+        <p className="text-xl leading-loose whitespace-pre-wrap">
           {tokens.map((token, index) => (
             <span
               key={index}
               className={`transition-colors duration-300 ${
-                index <= currentIndex ? 'text-teal-300' : 'text-gray-500'
+                index <= currentIndex ? 'text-teal-300' : 'text-transparent'
               } ${
                 index === currentIndex ? 'bg-teal-500/20 rounded' : ''
               }`}
