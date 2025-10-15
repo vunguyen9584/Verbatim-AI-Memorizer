@@ -216,7 +216,28 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
             </div>
         );
       case 'typed_exact':
-        return <input type="text" autoFocus className="w-full bg-gray-700 border-2 border-gray-600 rounded-md p-2 text-teal-300 focus:border-teal-500 focus:outline-none" value={userAnswer || ''} disabled={isAnswered} onChange={(e) => setUserAnswer(e.target.value)} />;
+        const typedQuiz = currentQuiz as TypedExactQuizItem;
+        // Fallback for old data that might not have the mask
+        if (!typedQuiz.base_text_with_masks) {
+            return <input type="text" autoFocus className="w-full bg-gray-700 border-2 border-gray-600 rounded-md p-2 text-teal-300 focus:border-teal-500 focus:outline-none" value={userAnswer || ''} disabled={isAnswered} onChange={(e) => setUserAnswer(e.target.value)} />;
+        }
+        const typedParts = (typedQuiz.base_text_with_masks || '').split('...');
+        return (
+            <div className="flex items-center flex-wrap">
+              <span>{typedParts[0]}</span>
+              {typedParts.length > 1 && (
+                <input
+                  type="text"
+                  autoFocus
+                  className="bg-gray-700 border-2 border-gray-600 rounded-md p-2 mx-2 text-teal-300 flex-grow focus:border-teal-500 focus:outline-none min-w-[150px]"
+                  value={userAnswer || ''}
+                  disabled={isAnswered}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                />
+              )}
+              <span>{typedParts[1]}</span>
+            </div>
+        );
       case 'mcq_cloze':
         const mcqQuiz = currentQuiz as MCQQuizItem;
         return (
@@ -376,7 +397,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-sm text-gray-400">Question {currentQuizIndex + 1} of {quizData.quizzes.length}</p>
-              <h2 className="text-xl font-bold text-teal-400">{currentQuiz.stem}</h2>
+              <h2 className="text-xl font-bold text-teal-400">
+                {currentQuiz.type === 'typed_exact' ? 'Type the phrase exactly as shown:' : currentQuiz.stem}
+              </h2>
             </div>
             <Button onClick={handleEndQuiz} variant="ghost" className="flex-shrink-0">End Quiz</Button>
           </div>

@@ -27,6 +27,7 @@ export interface ClozeQuizItem extends QuizItemBase {
 // Typed Exact
 export interface TypedExactQuizItem extends QuizItemBase {
   type: 'typed_exact';
+  base_text_with_masks?: string; // Added to support fill-in-the-blank UI
   answer_span: number[];
   tolerance: {
     case: boolean;

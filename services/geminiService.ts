@@ -129,7 +129,7 @@ export const generateQuizzes = async (
 
     Available types:
     - 'cloze_by_token': Fill-in-the-blank style. Provide the base text with '...' masks and define the blanks with their answer text and token indices.
-    - 'typed_exact': The user must type an exact part of the text. Provide the token span for the answer.
+    - 'typed_exact': The user must type an exact phrase. Provide 'base_text_with_masks' where '...' represents the phrase to be typed. Also provide the 'answer_span' for the phrase.
     - 'mcq_cloze': A multiple-choice cloze question. Provide 'base_text_with_masks', an array of 'options', and CRITICALLY, 'answer_index' which is the zero-based index of the correct option within the 'options' array. Do NOT include a 'blanks' field for this type.
     - 'ordering': Scramble a sequence of words from the text for the user to reorder. Provide the scrambled words and the token span of the correct answer.
 
