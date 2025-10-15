@@ -26,6 +26,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   // Setup state
   const [selectedQuizTypes, setSelectedQuizTypes] = useState<string[]>(['cloze_by_token', 'typed_exact']);
   const [numQuestions, setNumQuestions] = useState(5);
+  const [clozeDifficulty, setClozeDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Easy');
   const [error, setError] = useState<string | null>(null);
 
   // Active quiz state
@@ -192,6 +193,49 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     switch (currentQuiz.type) {
       case 'cloze_by_token':
         const clozeQuiz = currentQuiz as ClozeQuizItem;
+
+        if (clozeDifficulty === 'Medium') {
+            return (
+                <div className="whitespace-pre-line text-center">
+                    {clozeQuiz.context_before && <p className="text-gray-400 italic mb-2">{clozeQuiz.context_before}</p>}
+                    <input
+                        type="text"
+                        placeholder="Type the missing line..."
+                        autoFocus
+                        className="bg-gray-700 border-2 border-gray-600 rounded-md p-2 mx-1 text-teal-300 w-full md:w-3/4 focus:border-teal-500 focus:outline-none"
+                        value={userAnswer?.[0] || ''}
+                        disabled={isAnswered}
+                        onChange={(e) => setUserAnswer([e.target.value])}
+                      />
+                    {clozeQuiz.context_after && <p className="text-gray-400 italic mt-2">{clozeQuiz.context_after}</p>}
+                </div>
+            );
+        }
+
+        if (clozeDifficulty === 'Hard') {
+            const beforeParts = clozeQuiz.context_before?.split(' ') || [];
+            const afterParts = clozeQuiz.context_after?.split(' ') || [];
+            const partialBefore = beforeParts.length > 2 ? `... ${beforeParts.slice(-2).join(' ')}` : clozeQuiz.context_before;
+            const partialAfter = afterParts.length > 2 ? `${afterParts.slice(0, 2).join(' ')} ...` : clozeQuiz.context_after;
+
+            return (
+                <div className="whitespace-pre-line text-center">
+                    {partialBefore && <p className="text-gray-400 italic mb-2">{partialBefore}</p>}
+                     <input
+                        type="text"
+                        placeholder="Type the missing line..."
+                        autoFocus
+                        className="bg-gray-700 border-2 border-gray-600 rounded-md p-2 mx-1 text-teal-300 w-full md:w-3/4 focus:border-teal-500 focus:outline-none"
+                        value={userAnswer?.[0] || ''}
+                        disabled={isAnswered}
+                        onChange={(e) => setUserAnswer([e.target.value])}
+                      />
+                    {partialAfter && <p className="text-gray-400 italic mt-2">{partialAfter}</p>}
+                </div>
+            );
+        }
+
+        // Default to Easy
         const parts = (clozeQuiz.base_text_with_masks || '').split('...');
         return (
             <div className="whitespace-pre-line">
@@ -376,6 +420,27 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                     className="w-full"
                 />
             </div>
+
+            {selectedQuizTypes.includes('cloze_by_token') && (
+                <div>
+                    <label className="block text-lg font-semibold text-gray-200 mb-3">Fill-in-the-Blank Difficulty</label>
+                    <div className="grid grid-cols-3 gap-3">
+                        {(['Easy', 'Medium', 'Hard'] as const).map(level => (
+                            <button
+                                key={level}
+                                onClick={() => setClozeDifficulty(level)}
+                                className={`p-3 rounded-lg border-2 text-center transition-all ${
+                                    clozeDifficulty === level
+                                    ? 'bg-teal-500/30 border-teal-400'
+                                    : 'bg-gray-700/50 border-gray-600 hover:bg-gray-700'
+                                }`}
+                            >
+                                {level}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
 
         <div className="mt-8">
