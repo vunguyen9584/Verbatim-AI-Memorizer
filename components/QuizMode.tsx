@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { QuizData, ClozeQuizItem, TypedExactQuizItem, MCQQuizItem, OrderingQuizItem } from '../types';
+import { QuizData, ClozeQuizItem, MCQQuizItem, OrderingQuizItem } from '../types';
 import { generateQuizzes } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
@@ -15,7 +15,6 @@ type QuizState = 'setup' | 'loading' | 'active' | 'results';
 
 const ALL_QUIZ_TYPES = [
     { id: 'cloze_by_token', name: 'Fill-in-the-Blank' },
-    { id: 'typed_exact', name: 'Type Exact Phrase' },
     { id: 'mcq_cloze', name: 'Multiple Choice' },
     { id: 'ordering', name: 'Word Order' },
 ];
@@ -24,7 +23,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   const [quizState, setQuizState] = useState<QuizState>('setup');
 
   // Setup state
-  const [selectedQuizTypes, setSelectedQuizTypes] = useState<string[]>(['cloze_by_token', 'typed_exact']);
+  const [selectedQuizTypes, setSelectedQuizTypes] = useState<string[]>(['cloze_by_token']);
   const [numQuestions, setNumQuestions] = useState(5);
   const [clozeDifficulty, setClozeDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Easy');
   const [error, setError] = useState<string | null>(null);
@@ -152,20 +151,6 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
             correct = clozeQuiz.blanks.every((blank, index) => (userAnswer[index] || '').trim().toLowerCase() === blank.answer_text.trim().toLowerCase());
         }
         break;
-      case 'typed_exact':
-        const typedQuiz = currentQuiz as TypedExactQuizItem;
-        let expected = tokens.slice(typedQuiz.answer_span[0], typedQuiz.answer_span[1] + 1).join('');
-        let actual = userAnswer;
-        if (typedQuiz.tolerance && !typedQuiz.tolerance.case) {
-            expected = expected.toLowerCase();
-            actual = actual.toLowerCase();
-        }
-        if (typedQuiz.tolerance && !typedQuiz.tolerance.punctuation) {
-            expected = expected.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").replace(/\s/g, '');
-            actual = actual.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").replace(/\s/g, '');
-        }
-        correct = actual.trim() === expected.trim();
-        break;
       case 'mcq_cloze':
         correct = userAnswer === correctAnswerIndex;
         break;
@@ -276,30 +261,6 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
               {clozeQuiz.context_after && <p className="text-gray-400 italic mt-2">{clozeQuiz.context_after}</p>}
             </div>
         );
-      case 'typed_exact':
-        const typedQuiz = currentQuiz as TypedExactQuizItem;
-        // Fallback for old data that might not have the mask
-        if (!typedQuiz.base_text_with_masks) {
-            return <input type="text" autoFocus className="w-full bg-gray-700 border-2 border-gray-600 rounded-md p-2 text-teal-300 focus:border-teal-500 focus:outline-none" value={userAnswer || ''} disabled={isAnswered} onChange={(e) => setUserAnswer(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }} />;
-        }
-        const typedParts = (typedQuiz.base_text_with_masks || '').split('...');
-        return (
-            <div className="flex items-center flex-wrap">
-              <span>{typedParts[0]}</span>
-              {typedParts.length > 1 && (
-                <input
-                  type="text"
-                  autoFocus
-                  className="bg-gray-700 border-2 border-gray-600 rounded-md p-2 mx-2 text-teal-300 flex-grow focus:border-teal-500 focus:outline-none min-w-[150px]"
-                  value={userAnswer || ''}
-                  disabled={isAnswered}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
-                />
-              )}
-              <span>{typedParts[1]}</span>
-            </div>
-        );
       case 'mcq_cloze':
         const mcqQuiz = currentQuiz as MCQQuizItem;
         return (
@@ -372,10 +333,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                 return clozeQuiz.blanks.map(b => `"${b.answer_text}"`).join(', ');
             }
             return correctAnswer;
-        }        case 'typed_exact':
-            const typedQuiz = currentQuiz as TypedExactQuizItem;
-            return tokens.slice(typedQuiz.answer_span[0], typedQuiz.answer_span[1] + 1).join('');
-        case 'mcq_cloze': {
+        }        case 'mcq_cloze': {
             const mcqQuiz = currentQuiz as MCQQuizItem;
             if (typeof correctAnswerIndex === 'number') {
                 const answerText = mcqQuiz.options?.[correctAnswerIndex]?.text;
@@ -489,7 +447,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
             <div>
               <p className="text-sm text-gray-400">Question {currentQuizIndex + 1} of {quizData.quizzes.length}</p>
               <h2 className="text-xl font-bold text-teal-400">
-                {currentQuiz.type === 'typed_exact' ? 'Type the phrase exactly as shown:' : currentQuiz.stem}
+                {currentQuiz.stem}
               </h2>
             </div>
             <Button onClick={handleEndQuiz} variant="ghost" className="flex-shrink-0">End Quiz</Button>

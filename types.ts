@@ -8,7 +8,7 @@ export enum LearningMode {
 
 // Shared
 export interface QuizItemBase {
-  type: 'cloze_by_token' | 'typed_exact' | 'mcq_cloze' | 'ordering';
+  type: 'cloze_by_token' | 'mcq_cloze' | 'ordering';
   stem: string;
 }
 
@@ -26,16 +26,6 @@ export interface ClozeQuizItem extends QuizItemBase {
   context_after?: string;
 }
 
-// Typed Exact
-export interface TypedExactQuizItem extends QuizItemBase {
-  type: 'typed_exact';
-  base_text_with_masks?: string; // Added to support fill-in-the-blank UI
-  answer_span: number[];
-  tolerance: {
-    case: boolean;
-    punctuation: boolean;
-  };
-}
 
 // Multiple Choice Cloze
 export interface MCQOption {
@@ -57,7 +47,7 @@ export interface OrderingQuizItem extends QuizItemBase {
 }
 
 
-export type QuizItem = ClozeQuizItem | TypedExactQuizItem | MCQQuizItem | OrderingQuizItem;
+export type QuizItem = ClozeQuizItem | MCQQuizItem | OrderingQuizItem;
 
 export interface QuizData {
   quizzes: QuizItem[];
