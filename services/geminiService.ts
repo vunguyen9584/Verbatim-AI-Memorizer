@@ -156,6 +156,18 @@ export const generateQuizzes = async (
         const parsedData = JSON.parse(jsonResponse) as QuizData;
         logger.log('GEMINI_RESPONSE_PARSED', { type: 'generateQuizzes', data: parsedData });
 
+        // Validate quiz data integrity
+        for (const quiz of parsedData.quizzes) {
+            if (quiz.type === 'cloze_by_token') {
+                // Ensure fill-in-the-blank questions have surrounding context.
+                if (!quiz.context_before && !quiz.context_after) {
+                    const errorMsg = "The AI returned a Fill-in-the-Blank quiz with no context. Please try again.";
+                    logger.log('GEMINI_VALIDATION_ERROR', { type: 'generateQuizzes', error: errorMsg, quiz });
+                    throw new Error(errorMsg);
+                }
+            }
+        }
+
         return parsedData;
     } catch (e) {
         logger.log('GEMINI_ERROR', { type: 'generateQuizzes', error: e });

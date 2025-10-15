@@ -216,6 +216,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                         value={userAnswer?.[0] || ''}
                         disabled={isAnswered}
                         onChange={(e) => setUserAnswer([e.target.value])}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
                       />
                     {clozeQuiz.context_after && <p className="text-gray-400 italic mt-2">{clozeQuiz.context_after}</p>}
                 </div>
@@ -239,6 +240,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                         value={userAnswer?.[0] || ''}
                         disabled={isAnswered}
                         onChange={(e) => setUserAnswer([e.target.value])}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
                       />
                     {partialAfter && <p className="text-gray-400 italic mt-2">{partialAfter}</p>}
                 </div>
@@ -265,6 +267,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                           newAnswers[index] = e.target.value;
                           setUserAnswer(newAnswers);
                         }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
                       />
                     )}
                   </React.Fragment>
@@ -277,7 +280,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         const typedQuiz = currentQuiz as TypedExactQuizItem;
         // Fallback for old data that might not have the mask
         if (!typedQuiz.base_text_with_masks) {
-            return <input type="text" autoFocus className="w-full bg-gray-700 border-2 border-gray-600 rounded-md p-2 text-teal-300 focus:border-teal-500 focus:outline-none" value={userAnswer || ''} disabled={isAnswered} onChange={(e) => setUserAnswer(e.target.value)} />;
+            return <input type="text" autoFocus className="w-full bg-gray-700 border-2 border-gray-600 rounded-md p-2 text-teal-300 focus:border-teal-500 focus:outline-none" value={userAnswer || ''} disabled={isAnswered} onChange={(e) => setUserAnswer(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }} />;
         }
         const typedParts = (typedQuiz.base_text_with_masks || '').split('...');
         return (
@@ -291,6 +294,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                   value={userAnswer || ''}
                   disabled={isAnswered}
                   onChange={(e) => setUserAnswer(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
                 />
               )}
               <span>{typedParts[1]}</span>
@@ -491,7 +495,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
             <Button onClick={handleEndQuiz} variant="ghost" className="flex-shrink-0">End Quiz</Button>
           </div>
     
-          <div className="flex-grow mb-6 text-lg text-gray-200">
+          <div className="flex-grow mb-4 text-lg text-gray-200">
             {renderQuizContent()}
           </div>
     
