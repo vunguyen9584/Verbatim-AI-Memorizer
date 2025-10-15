@@ -90,15 +90,40 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     try {
       const options = { quizTypes: selectedQuizTypes, numQuestions };
       const data = await generateQuizzes(text, tokens, options);
-      if (data.quizzes && data.quizzes.length > 0) {
-        setQuizData(data);
-        setQuizState('active');
-      } else {
-        setError("Could not generate a quiz for this text with the selected options.");
+
+      // Basic validation for AI response
+      if (!data || !Array.isArray(data.quizzes) || data.quizzes.length === 0) {
+        setError("The AI returned an empty or invalid response. Please try again.");
         setQuizState('setup');
+        return;
       }
+
+      // More specific validation for quiz item integrity.
+      for (const quiz of data.quizzes) {
+        if (!quiz || !quiz.type || !quiz.stem) {
+             setError("The AI returned a quiz with invalid data. Please try again.");
+             setQuizState('setup');
+             return;
+        }
+        // This check specifically prevents the "Answer not available" issue for MCQs.
+        if (quiz.type === 'mcq_cloze') {
+          const mcq = quiz as MCQQuizItem;
+          const hasIndex = typeof mcq.answer_index === 'number';
+          const canDerive = (mcq as any).blanks?.[0]?.answer_text && Array.isArray(mcq.options);
+          
+          if (!hasIndex && !canDerive) {
+            setError("The AI returned an MCQ quiz with no answer. Please try again.");
+            setQuizState('setup');
+            console.warn("Invalid MCQ item from AI:", mcq);
+            return;
+          }
+        }
+      }
+
+      setQuizData(data);
+      setQuizState('active');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      setError(err instanceof Error ? err.message : 'An unknown error occurred while generating the quiz.');
       console.error(err);
       setQuizState('setup');
     }
