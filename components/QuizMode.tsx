@@ -162,8 +162,8 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         break;
       case 'ordering':
         const orderingQuiz = currentQuiz as OrderingQuizItem;
-        const correctOrder = tokens.slice(orderingQuiz.answer_span[0], orderingQuiz.answer_span[1] + 1).join('');
-        const userAnswerOrder = userAnswer.map((w: any) => w.word).join('');
+        const correctOrder = tokens.slice(orderingQuiz.answer_span[0], orderingQuiz.answer_span[1] + 1).join('').replace(/\s/g, '');
+        const userAnswerOrder = userAnswer.map((w: any) => w.word).join('').replace(/\s/g, '');
         correct = userAnswerOrder === correctOrder;
         break;
     }
