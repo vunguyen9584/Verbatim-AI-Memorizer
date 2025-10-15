@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { QuizData, ClozeQuizItem, MCQQuizItem, OrderingQuizItem } from '../types';
 import { generateQuizzes } from '../services/geminiService';
 import Loader from './common/Loader';
@@ -37,7 +37,15 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   const [showAnswer, setShowAnswer] = useState(false);
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
 
+  const nextButtonRef = useRef<HTMLButtonElement>(null);
+
   const currentQuiz = useMemo(() => quizData?.quizzes[currentQuizIndex], [quizData, currentQuizIndex]);
+
+  useEffect(() => {
+    if (isAnswered && nextButtonRef.current) {
+      nextButtonRef.current.focus();
+    }
+  }, [isAnswered]);
 
   // Memoize the correct answer index, deriving it if necessary for MCQs.
   const correctAnswerIndex = useMemo(() => {
@@ -464,7 +472,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
             {!isAnswered ? (
               <Button onClick={handleCheckAnswer} variant="primary" disabled={userAnswer === null || (Array.isArray(userAnswer) && userAnswer.length === 0)}>Check Answer</Button>
             ) : (
-              <Button onClick={handleNext} variant="primary">
+              <Button onClick={handleNext} variant="primary" ref={nextButtonRef}>
                 {currentQuizIndex < quizData.quizzes.length - 1 ? 'Next Question' : 'Finish Quiz'}
               </Button>
             )}
