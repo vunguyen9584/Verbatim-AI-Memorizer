@@ -142,7 +142,15 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     switch (currentQuiz.type) {
       case 'cloze_by_token':
         const clozeQuiz = currentQuiz as ClozeQuizItem;
-        correct = clozeQuiz.blanks.every((blank, index) => (userAnswer[index] || '').trim().toLowerCase() === blank.answer_text.trim().toLowerCase());
+        if (clozeDifficulty === 'Medium' || clozeDifficulty === 'Hard') {
+            let correctAnswer = clozeQuiz.base_text_with_masks || '';
+            clozeQuiz.blanks.forEach(blank => {
+                correctAnswer = correctAnswer.replace('...', blank.answer_text);
+            });
+            correct = (userAnswer?.[0] || '').trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+        } else { // Easy mode
+            correct = clozeQuiz.blanks.every((blank, index) => (userAnswer[index] || '').trim().toLowerCase() === blank.answer_text.trim().toLowerCase());
+        }
         break;
       case 'typed_exact':
         const typedQuiz = currentQuiz as TypedExactQuizItem;
@@ -189,6 +197,8 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   
   const renderQuizContent = () => {
     if (!currentQuiz) return null;
+
+    console.log(JSON.stringify(currentQuiz));
 
     switch (currentQuiz.type) {
       case 'cloze_by_token':
@@ -347,10 +357,18 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     if (!currentQuiz) return null;
 
     switch (currentQuiz.type) {
-        case 'cloze_by_token':
+        case 'cloze_by_token': {
             const clozeQuiz = currentQuiz as ClozeQuizItem;
-            return clozeQuiz.blanks.map(b => `"${b.answer_text}"`).join(', ');
-        case 'typed_exact':
+            let correctAnswer = clozeQuiz.base_text_with_masks || '';
+            clozeQuiz.blanks.forEach(blank => {
+                correctAnswer = correctAnswer.replace('...', blank.answer_text);
+            });
+            if (clozeDifficulty === 'Easy') {
+                // For easy mode, show the individual blanked words as before
+                return clozeQuiz.blanks.map(b => `"${b.answer_text}"`).join(', ');
+            }
+            return correctAnswer;
+        }        case 'typed_exact':
             const typedQuiz = currentQuiz as TypedExactQuizItem;
             return tokens.slice(typedQuiz.answer_span[0], typedQuiz.answer_span[1] + 1).join('');
         case 'mcq_cloze': {
