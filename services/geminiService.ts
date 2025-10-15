@@ -25,6 +25,8 @@ const quizDataSchema = {
                     },
                     // cloze_by_token
                     base_text_with_masks: { type: Type.STRING },
+                    context_before: { type: Type.STRING, description: "The sentence immediately preceding the quiz sentence for context." },
+                    context_after: { type: Type.STRING, description: "The sentence immediately following the quiz sentence for context." },
                     blanks: {
                         type: Type.ARRAY,
                         items: {
@@ -128,7 +130,7 @@ export const generateQuizzes = async (
     Generate exactly ${options.numQuestions} quiz questions. The quiz types must be chosen from the following list: [${options.quizTypes.join(', ')}].
 
     Available types:
-    - 'cloze_by_token': Fill-in-the-blank style. Provide the base text with '...' masks and define the blanks with their answer text and token indices.
+    - 'cloze_by_token': Fill-in-the-blank style. Provide the base text with '...' masks and define the blanks with their answer text and token indices. Also, provide the sentence immediately before ('context_before') and after ('context_after') the sentence containing the blank, if they exist.
     - 'typed_exact': The user must type an exact phrase. Provide 'base_text_with_masks' where '...' represents the phrase to be typed. Also provide the 'answer_span' for the phrase.
     - 'mcq_cloze': A multiple-choice cloze question. Provide 'base_text_with_masks', an array of 'options', and CRITICALLY, 'answer_index' which is the zero-based index of the correct option within the 'options' array. Do NOT include a 'blanks' field for this type.
     - 'ordering': Scramble a sequence of words from the text for the user to reorder. Provide the scrambled words and the token span of the correct answer.

@@ -194,25 +194,29 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         const clozeQuiz = currentQuiz as ClozeQuizItem;
         const parts = (clozeQuiz.base_text_with_masks || '').split('...');
         return (
-            <div>
-              {parts.map((part, index) => (
-                <React.Fragment key={index}>
-                  {part}
-                  {index < clozeQuiz.blanks.length && (
-                    <input
-                      type="text"
-                      className="bg-gray-700 border-2 border-gray-600 rounded-md p-1 mx-1 text-teal-300 w-32 focus:border-teal-500 focus:outline-none"
-                      value={userAnswer?.[index] || ''}
-                      disabled={isAnswered}
-                      onChange={(e) => {
-                        const newAnswers = [...(userAnswer || [])];
-                        newAnswers[index] = e.target.value;
-                        setUserAnswer(newAnswers);
-                      }}
-                    />
-                  )}
-                </React.Fragment>
-              ))}
+            <div className="whitespace-pre-line">
+              {clozeQuiz.context_before && <p className="text-gray-400 italic mb-2">{clozeQuiz.context_before}</p>}
+              <p>
+                {parts.map((part, index) => (
+                  <React.Fragment key={index}>
+                    {part}
+                    {index < clozeQuiz.blanks.length && (
+                      <input
+                        type="text"
+                        className="bg-gray-700 border-2 border-gray-600 rounded-md p-1 mx-1 text-teal-300 w-32 focus:border-teal-500 focus:outline-none"
+                        value={userAnswer?.[index] || ''}
+                        disabled={isAnswered}
+                        onChange={(e) => {
+                          const newAnswers = [...(userAnswer || [])];
+                          newAnswers[index] = e.target.value;
+                          setUserAnswer(newAnswers);
+                        }}
+                      />
+                    )}
+                  </React.Fragment>
+                ))}
+              </p>
+              {clozeQuiz.context_after && <p className="text-gray-400 italic mt-2">{clozeQuiz.context_after}</p>}
             </div>
         );
       case 'typed_exact':

@@ -22,6 +22,8 @@ export interface ClozeQuizItem extends QuizItemBase {
   type: 'cloze_by_token';
   base_text_with_masks: string;
   blanks: ClozeBlank[];
+  context_before?: string;
+  context_after?: string;
 }
 
 // Typed Exact
