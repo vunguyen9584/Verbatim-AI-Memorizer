@@ -38,14 +38,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
 
   const nextButtonRef = useRef<HTMLButtonElement>(null);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const currentQuiz = useMemo(() => quizData?.quizzes[currentQuizIndex], [quizData, currentQuizIndex]);
-
-  useEffect(() => {
-    if (isAnswered && nextButtonRef.current) {
-      nextButtonRef.current.focus();
-    }
-  }, [isAnswered]);
 
   // Memoize the correct answer index, deriving it if necessary for MCQs.
   const correctAnswerIndex = useMemo(() => {
@@ -66,6 +61,23 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     }
     return undefined; // Cannot determine the index
   }, [currentQuiz]);
+
+  useEffect(() => {
+    if (isAnswered && nextButtonRef.current) {
+      nextButtonRef.current.focus();
+    }
+  }, [isAnswered]);
+
+  useEffect(() => {
+    // Focus on the first input when a new question is displayed
+    if (quizState === 'active' && !isAnswered) {
+      const firstInput = inputRefs.current[0];
+      // Use a small timeout to ensure the element is focusable after the render.
+      setTimeout(() => {
+        firstInput?.focus();
+      }, 0);
+    }
+  }, [currentQuizIndex, quizState, isAnswered]);
 
   const handleQuizTypeToggle = (typeId: string) => {
     setSelectedQuizTypes(prev =>
@@ -193,6 +205,8 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
     console.log(JSON.stringify(currentQuiz));
 
+    inputRefs.current = []; // Clear refs before re-populating
+
     switch (currentQuiz.type) {
       case 'cloze_by_token':
         const clozeQuiz = currentQuiz as ClozeQuizItem;
@@ -202,9 +216,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                 <div className="whitespace-pre-line text-center">
                     {clozeQuiz.context_before && <p className="text-gray-400 italic mb-2">{clozeQuiz.context_before}</p>}
                     <input
+                        ref={el => inputRefs.current[0] = el}
                         type="text"
                         placeholder="Type the missing line..."
-                        autoFocus
                         className="bg-gray-700 border-2 border-gray-600 rounded-md p-2 mx-1 text-teal-300 w-full md:w-3/4 focus:border-teal-500 focus:outline-none"
                         value={userAnswer?.[0] || ''}
                         disabled={isAnswered}
@@ -226,9 +240,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                 <div className="whitespace-pre-line text-center">
                     {partialBefore && <p className="text-gray-400 italic mb-2">{partialBefore}</p>}
                      <input
+                        ref={el => inputRefs.current[0] = el}
                         type="text"
                         placeholder="Type the missing line..."
-                        autoFocus
                         className="bg-gray-700 border-2 border-gray-600 rounded-md p-2 mx-1 text-teal-300 w-full md:w-3/4 focus:border-teal-500 focus:outline-none"
                         value={userAnswer?.[0] || ''}
                         disabled={isAnswered}
@@ -251,6 +265,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                     {part}
                     {index < clozeQuiz.blanks.length && (
                       <input
+                        ref={el => inputRefs.current[index] = el}
                         type="text"
                         className="bg-gray-700 border-2 border-gray-600 rounded-md p-1 mx-1 text-teal-300 w-32 focus:border-teal-500 focus:outline-none"
                         value={userAnswer?.[index] || ''}
