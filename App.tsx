@@ -64,7 +64,7 @@ const App: React.FC = () => {
       
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         <div className="lg:col-span-1 flex flex-col gap-6">
-          <TextInputArea onTextSubmit={handleTextSubmit} />
+          <TextInputArea onTextSubmit={handleTextSubmit} hasSubmittedText={!!text} />
           {text && <ModeSelector currentMode={mode} onSelectMode={setMode} />}
         </div>
         
