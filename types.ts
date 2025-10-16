@@ -73,7 +73,6 @@ export interface CoPlayPauseRequire {
 export interface CoPlayTimelineItem {
   reveal_until_token: number;
   pause_require: CoPlayPauseRequire[];
-  hint_policy?: string;
 }
 
 export interface CoPlayPlan {

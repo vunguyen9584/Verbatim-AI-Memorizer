@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { CoPlayPlan, CoPlayTimelineItem } from '../types';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { CoPlayPlan } from '../types';
 import { planCoPlay } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
+import { LightbulbIcon } from './common/Icon';
 
 interface CoPlayModeProps {
   text: string;
@@ -16,26 +17,33 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [error, setError] = useState<string | null>(null);
   const [timelineIndex, setTimelineIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
-  const [isPaused, setIsPaused] = useState(false);
+  const [isPaused, setIsPaused] = useState(true);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [hint, setHint] = useState('');
+  
+  const [wpm, setWpm] = useState(120);
+  const [revealedTokenIndex, setRevealedTokenIndex] = useState(-1);
+  const timerRef = useRef<number | null>(null);
 
   const fetchPlan = useCallback(async () => {
     setLoading(true);
     setError(null);
     setPlan(null);
+    setTimelineIndex(0);
+    setUserInput('');
+    setFeedback(null);
+    setHint('');
+    setRevealedTokenIndex(-1);
     try {
       const data = await planCoPlay(text, tokens);
-      // Add a final step to reveal the rest of the text
       if (data.timeline.length > 0) {
         data.timeline.push({
             reveal_until_token: tokens.length,
             pause_require: [],
-        })
+        });
       }
       setPlan(data);
-      if (data.timeline.length > 0) {
-        setIsPaused(true);
-      }
+      setIsPaused(data.timeline.length > 0);
     } catch (err) {
       setError('Failed to generate a Co-Play plan. Please try again.');
     } finally {
@@ -46,45 +54,68 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   useEffect(() => {
     fetchPlan();
   }, [fetchPlan]);
-  
+
   const currentTimelineItem = plan?.timeline[timelineIndex];
-  const previousTimelineItem = timelineIndex > 0 ? plan?.timeline[timelineIndex-1] : { reveal_until_token: -1 };
+  const prevTimelineItem = timelineIndex > 0 ? plan.timeline[timelineIndex - 1] : null;
+  const revealUntilToken = currentTimelineItem?.reveal_until_token ?? (isPaused ? revealedTokenIndex : tokens.length);
+
+  useEffect(() => {
+    if (!isPaused && revealedTokenIndex < revealUntilToken) {
+      const delay = 60000 / wpm;
+      timerRef.current = window.setTimeout(() => {
+        setRevealedTokenIndex(prev => prev + 1);
+      }, delay);
+    } else if (!isPaused && revealedTokenIndex >= revealUntilToken -1) {
+        // Finished revealing this segment
+        setTimelineIndex(prev => prev + 1);
+        const nextTimelineItem = plan?.timeline[timelineIndex + 1];
+        if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
+            setIsPaused(true);
+        } else if (timelineIndex >= plan!.timeline.length - 1) {
+            setIsPaused(true); // End of session
+        }
+    }
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [isPaused, revealedTokenIndex, wpm, plan, timelineIndex, revealUntilToken]);
+
+
+  const startTokenOfPause = currentTimelineItem?.pause_require[0]?.span[0] ?? 0;
+  const endTokenOfPause = currentTimelineItem?.pause_require[0]?.span[1] ?? 0;
+  const correctAnswer = tokens.slice(startTokenOfPause, endTokenOfPause + 1).join('');
+
+  const handleHint = () => {
+    if (hint.length < correctAnswer.length) {
+      setHint(correctAnswer.substring(0, hint.length + 1));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentTimelineItem || currentTimelineItem.pause_require.length === 0) return;
 
-    const [start, end] = currentTimelineItem.pause_require[0].span;
-    const correctAnswer = tokens.slice(start, end + 1).join('');
-    
-    if (userInput.trim() === correctAnswer.trim()) {
+    if (userInput.trim().toLowerCase() === correctAnswer.trim().toLowerCase()) {
       setFeedback('correct');
       setTimeout(() => {
-        setTimelineIndex(prev => prev + 1);
-        setIsPaused(plan!.timeline[timelineIndex+1]?.pause_require.length > 0);
+        const nextRevealStartIndex = prevTimelineItem?.reveal_until_token ?? 0;
+        setRevealedTokenIndex(nextRevealStartIndex -1);
+        setIsPaused(false);
         setUserInput('');
         setFeedback(null);
+        setHint('');
       }, 1000);
     } else {
       setFeedback('incorrect');
     }
   };
-
-  const getRevealedText = () => {
-    const revealEndIndex = currentTimelineItem?.reveal_until_token ?? tokens.length;
-    return tokens.slice(0, revealEndIndex).join('');
-  };
   
-  const getHiddenText = () => {
-    const revealEndIndex = currentTimelineItem?.reveal_until_token ?? 0;
-    return tokens.slice(revealEndIndex).join('');
-  };
+  const isFinished = timelineIndex >= (plan?.timeline.length ?? 0);
 
   if (loading) return <Loader text="Planning your session..." />;
   if (error) return <div className="p-8 text-center text-red-400">{error}</div>;
   if (!plan || plan.timeline.length === 0) return <div className="p-8 text-center text-gray-400">Could not create a Co-Play plan for this text.</div>;
-  
-  const isFinished = timelineIndex >= plan.timeline.length - 1 && !isPaused;
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
@@ -92,9 +123,19 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
       
       <div className="flex-grow bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 mb-6">
         <p className="text-xl leading-loose whitespace-pre-wrap">
-          <span className="text-teal-300">{getRevealedText()}</span>
-          {isPaused && currentTimelineItem?.pause_require.length > 0 && <span className="bg-teal-500/20 text-teal-200 p-1 rounded-md animate-pulse">...</span>}
-          <span className="text-transparent">{getHiddenText()}</span>
+          {tokens.map((token, index) => (
+            <span
+              key={index}
+              className={`transition-colors duration-200 ${
+                index <= revealedTokenIndex ? 'text-teal-300' : 'text-transparent'
+              } ${
+                index === revealedTokenIndex ? 'bg-teal-500/20 rounded' : ''
+              }`}
+            >
+              {token}
+            </span>
+          ))}
+           {isPaused && !isFinished && currentTimelineItem?.pause_require.length > 0 && <span className="bg-teal-500/20 text-teal-200 p-1 rounded-md animate-pulse">...</span>}
         </p>
       </div>
 
@@ -105,29 +146,63 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
               <Button onClick={fetchPlan} className="mt-4">Play Again</Button>
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3">
-          <input
-            type="text"
-            value={userInput}
-            onChange={(e) => {
-              setUserInput(e.target.value)
-              setFeedback(null)
-            }}
-            placeholder="Type the next part..."
-            className={`flex-grow w-full sm:w-auto bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 ${
-              feedback === 'correct' ? 'border-green-500' :
-              feedback === 'incorrect' ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
-            }`}
-            autoFocus
-          />
-          <Button type="submit" variant="primary" className="w-full sm:w-auto">
-            Continue
-          </Button>
-        </form>
+        <>
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative flex-grow w-full sm:w-auto">
+              <input
+                type="text"
+                value={userInput}
+                onChange={(e) => {
+                  setUserInput(e.target.value)
+                  setFeedback(null)
+                }}
+                placeholder="Type the next part..."
+                className={`w-full bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 pr-12 ${
+                  feedback === 'correct' ? 'border-green-500' :
+                  feedback === 'incorrect' ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
+                }`}
+                autoFocus
+              />
+              <Button 
+                onClick={handleHint} 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-400"
+                aria-label="Get a hint"
+              >
+                <LightbulbIcon className="w-6 h-6" />
+              </Button>
+            </div>
+            <Button type="submit" variant="primary" className="w-full sm:w-auto">
+              Continue
+            </Button>
+          </form>
+          {hint && (
+            <div className="mt-3 text-center text-sm text-gray-400">
+              Hint: <span className="font-mono bg-gray-700 p-1 rounded">{hint}</span>
+            </div>
+          )}
+        </>
       ) : (
-          <div className="text-center text-gray-400">
-              <p>Session in progress...</p>
-          </div>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center text-gray-400">
+                <p>Revealing text...</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="wpm" className="text-sm font-medium text-gray-400">Speed (WPM):</label>
+              <input
+                type="range"
+                id="wpm"
+                min="50"
+                max="400"
+                step="10"
+                value={wpm}
+                onChange={(e) => setWpm(Number(e.target.value))}
+                className="w-32 md:w-48"
+              />
+              <span className="font-mono text-teal-300 w-10 text-center">{wpm}</span>
+            </div>
+        </div>
       )}
     </div>
   );
