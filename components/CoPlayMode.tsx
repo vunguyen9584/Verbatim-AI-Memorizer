@@ -69,20 +69,30 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const revealUntilToken = currentTimelineItem?.reveal_until_token ?? (isPaused ? revealedTokenIndex : tokens.length);
 
   useEffect(() => {
+    if (!plan) return;
+
     if (!isPaused && revealedTokenIndex < revealUntilToken) {
       const delay = 60000 / wpm;
       timerRef.current = window.setTimeout(() => {
         setRevealedTokenIndex(prev => prev + 1);
       }, delay);
-    } else if (!isPaused && revealedTokenIndex >= revealUntilToken -1) {
-        // Finished revealing this segment
-        setTimelineIndex(prev => prev + 1);
-        const nextTimelineItem = plan?.timeline[timelineIndex + 1];
-        if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
+    } else if (!isPaused && revealedTokenIndex >= revealUntilToken - 1) {
+        // Finished revealing this segment, advance the timeline.
+        setTimelineIndex(prevIndex => {
+          const nextIndex = prevIndex + 1;
+          
+          if (nextIndex >= plan.timeline.length) {
             setIsPaused(true);
-        } else if (timelineIndex >= plan!.timeline.length - 1) {
-            setIsPaused(true); // End of session
-        }
+            return prevIndex;
+          }
+
+          const nextTimelineItem = plan.timeline[nextIndex];
+          if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
+              setIsPaused(true);
+          }
+          
+          return nextIndex;
+        });
     }
 
     return () => {
@@ -128,13 +138,29 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     if (trimmedUserInput.toLowerCase() === trimmedCorrectAnswer.toLowerCase()) {
       setFeedback('correct');
       setIncorrectFeedback(null);
+
       setTimeout(() => {
-        const nextRevealStartIndex = prevTimelineItem?.reveal_until_token ?? 0;
-        setRevealedTokenIndex(nextRevealStartIndex -1);
-        setIsPaused(false);
+        // Reveal the text the user just typed.
+        const endOfTypedPhrase = currentTimelineItem.pause_require[0].span[1];
+        setRevealedTokenIndex(endOfTypedPhrase);
+
+        // Move to the next timeline item.
+        const nextIndex = timelineIndex + 1;
+        setTimelineIndex(nextIndex);
+
+        // Check if the new timeline item requires a pause.
+        const nextTimelineItem = plan?.timeline[nextIndex];
+        if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
+          setIsPaused(true); // The next phase is another pause.
+        } else {
+          setIsPaused(false); // The next phase is auto-reveal.
+        }
+        
+        // Reset input fields for the next round.
         setUserInput('');
         setFeedback(null);
         setHint('');
+
       }, 300);
     } else {
       setFeedback('incorrect');
