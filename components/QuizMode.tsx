@@ -178,7 +178,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         const orderingQuiz = currentQuiz as OrderingQuizItem;
         const correctOrder = tokens.slice(orderingQuiz.answer_span[0], orderingQuiz.answer_span[1] + 1).join('').replace(/\s/g, '');
         const userAnswerOrder = userAnswer.map((w: any) => w.word).join('').replace(/\s/g, '');
-        correct = userAnswerOrder === correctOrder;
+        correct = userAnswerOrder.toLowerCase() === correctOrder.toLowerCase();
         break;
     }
     
