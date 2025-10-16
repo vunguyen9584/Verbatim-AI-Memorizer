@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { QuizData, CoPlayPlan } from '../types';
+import { QuizData, CoPlayPlan, CoPlayModeOption, CoPlayModeType } from '../types';
 import { logger } from '../utils/debugLogger';
 
 // Fix: Initialize the GoogleGenAI client to interact with the Gemini API.
@@ -83,6 +83,10 @@ const coPlayPlanSchema = {
                                     type: Type.ARRAY,
                                     description: "The start and end token indices (inclusive) of the text the user needs to type.",
                                     items: { type: Type.INTEGER }
+                                },
+                                user_sentences_to_type: {
+                                    type: Type.INTEGER,
+                                    description: "The number of sentences the user is expected to type during this pause."
                                 }
                             },
                             required: ['span']
@@ -167,33 +171,28 @@ export const generateQuizzes = async (
     }
 };
 
-export const planCoPlay = async (text: string, tokens: string[]): Promise<CoPlayPlan> => {
-    const model = 'gemini-2.5-flash';
+export const planCoPlay = async (text: string, tokens: string[], options: CoPlayModeOption): Promise<CoPlayPlan> => {
+    const model = 'gemini-2.0-flash';
     const tokenList = tokens.map((token, index) => `[${index}]: ${JSON.stringify(token)}`).join('\n');
 
-    const prompt = `Create a "Co-Play" plan to help a user memorize a piece of text. The plan is a timeline of events. Each event reveals the text up to a certain token, and can optionally pause to require the user to type the next few words.
+    let prompt = `Create a "Co-Play" plan to help a user memorize a piece of text. The plan is a timeline of events. Each event reveals the text up to a certain token, and can optionally pause to require the user to type the next few words.\n\nThe text is:\n---\n${text}\n---\n\nThe tokenization is (index: "token"):\n---\n${tokenList}\n---\n\nThe plan should consist of 3-5 steps.\nEach step in the timeline has:\n- 'reveal_until_token': The index of the token *before* which the text is revealed.\n- 'pause_require': An array that specifies a part of the text the user must type to continue. This should contain one object with a 'span' property, which is a [start, end] tuple of inclusive token indices. A pause should occur *after* the revealed text.\n\nExample: To reveal "The quick brown" and then ask the user to type "fox", you might have a timeline item like:\n{ "reveal_until_token": 3, "pause_require": [{ "span": [3, 3] }] }\n\n`;
 
-    The text is:
-    ---
-    ${text}
-    ---
+    switch (options.type) {
+        case CoPlayModeType.AppFirstN:
+            prompt += `The user wants to follow a pattern: the app reveals ${options.appSentences} sentence(s), then the user types ${options.userSentences} sentence(s). The app goes first. Generate a timeline that follows this pattern.\n`;
+            break;
+        case CoPlayModeType.UserFirstN:
+            prompt += `The user wants to follow a pattern: the user types ${options.userSentences} sentence(s), then the app reveals ${options.appSentences} sentence(s). The user goes first. Generate a timeline that follows this pattern.\n`;
+            break;
+        case CoPlayModeType.AppFirstRandom:
+            prompt += `The user wants to follow a pattern: the app reveals a random number of sentences, then the user types a random number of sentences. The app goes first. For each user turn, you MUST specify the number of sentences to type in the 'user_sentences_to_type' field.\n`;
+            break;
+        case CoPlayModeType.UserFirstRandom:
+            prompt += `The user wants to follow a pattern: the user types ${options.userSentences} sentence(s), then the app reveals ${options.appSentences} sentence(s). The user goes first. For each user turn, you MUST specify the number of sentences to type in the 'user_sentences_to_type' field.\n`;
+            break;
+    }
 
-    The tokenization is (index: "token"):
-    ---
-    ${tokenList}
-    ---
-
-    The plan should consist of 3-5 steps.
-    Each step in the timeline has:
-    - 'reveal_until_token': The index of the token *before* which the text is revealed.
-    - 'pause_require': An array that specifies a part of the text the user must type to continue. This should contain one object with a 'span' property, which is a [start, end] tuple of inclusive token indices. A pause should occur *after* the revealed text.
-
-    Example: To reveal "The quick brown" and then ask the user to type "fox", you might have a timeline item like:
-    { "reveal_until_token": 3, "pause_require": [{ "span": [3, 3] }] }
-
-    Generate a complete timeline. The first step should reveal a small chunk and then pause. Subsequent steps should reveal more.
-    Return the output in a JSON object matching the provided schema.
-    `;
+    prompt += `Generate a complete timeline. Return the output in a JSON object matching the provided schema.`;
 
     logger.log('GEMINI_REQUEST', { type: 'planCoPlay', prompt });
 
@@ -213,10 +212,26 @@ export const planCoPlay = async (text: string, tokens: string[]): Promise<CoPlay
         const parsedData = JSON.parse(jsonResponse) as CoPlayPlan;
         logger.log('GEMINI_RESPONSE_PARSED', { type: 'planCoPlay', data: parsedData });
         
+        // Validation
+        if (!parsedData.timeline || parsedData.timeline.length === 0) {
+            throw new Error("The AI returned an empty or invalid timeline.");
+        }
+
+        if (options.type === CoPlayModeType.AppFirstRandom || options.type === CoPlayModeType.UserFirstRandom) {
+            for (const item of parsedData.timeline) {
+                if (item.pause_require && item.pause_require.length > 0) {
+                    if (!item.pause_require[0].user_sentences_to_type) {
+                        throw new Error("The AI did not specify the number of sentences to type for a random mode.");
+                    }
+                }
+            }
+        }
+
         return parsedData;
     } catch (e) {
         logger.log('GEMINI_ERROR', { type: 'planCoPlay', error: e });
         console.error("Error planning co-play:", e);
-        throw new Error("Failed to generate a Co-Play plan. The AI model may be temporarily unavailable.");
+        const errorMessage = e instanceof Error ? e.message : "Failed to generate a Co-Play plan. The AI model may be temporarily unavailable.";
+        throw new Error(errorMessage);
     }
 };

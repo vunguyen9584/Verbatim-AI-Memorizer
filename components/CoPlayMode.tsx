@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { CoPlayPlan } from '../types';
+import { CoPlayPlan, CoPlayModeType, CoPlayModeOption } from '../types';
 import { planCoPlay } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
@@ -12,8 +12,11 @@ interface CoPlayModeProps {
 }
 
 const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
+  const [modeOption, setModeOption] = useState<CoPlayModeOption>({ type: CoPlayModeType.AppFirstN, appSentences: 1, userSentences: 1 });
+  const [appSentences, setAppSentences] = useState(1);
+  const [userSentences, setUserSentences] = useState(1);
   const [plan, setPlan] = useState<CoPlayPlan | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timelineIndex, setTimelineIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
@@ -22,7 +25,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [hint, setHint] = useState('');
   const [incorrectFeedback, setIncorrectFeedback] = useState<React.ReactNode | null>(null);
 
-  const [wpm, setWpm] = useState(120);
+  const [wpm, setWpm] = useState(200);
   const [revealedTokenIndex, setRevealedTokenIndex] = useState(-1);
   const timerRef = useRef<number | null>(null);
 
@@ -37,7 +40,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setIncorrectFeedback(null);
     setRevealedTokenIndex(-1);
     try {
-      const data = await planCoPlay(text, tokens);
+      const data = await planCoPlay(text, tokens, modeOption);
       if (data.timeline.length > 0) {
         data.timeline.push({
             reveal_until_token: tokens.length,
@@ -54,15 +57,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         setRevealedTokenIndex(firstPauseStartToken - 1);
       }
     } catch (err) {
-      setError('Failed to generate a Co-Play plan. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to generate a Co-Play plan. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [text, tokens]);
+  }, [text, tokens, modeOption]);
 
-  useEffect(() => {
-    fetchPlan();
-  }, [fetchPlan]);
+  // Remove useEffect that fetches plan on load
 
   const currentTimelineItem = plan?.timeline[timelineIndex];
   const prevTimelineItem = timelineIndex > 0 ? plan.timeline[timelineIndex - 1] : null;
@@ -170,9 +171,54 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   
   const isFinished = timelineIndex >= (plan?.timeline.length ?? 0);
 
+  const handleModeChange = (type: CoPlayModeType) => {
+    setModeOption({ type, appSentences, userSentences });
+  };
+
+  const handleStart = () => {
+    setModeOption({ type: modeOption.type, appSentences, userSentences });
+    fetchPlan();
+  };
+
+  if (!plan) {
+    return (
+      <div className="p-4 md:p-8 flex flex-col h-full">
+        <h2 className="text-2xl font-bold text-teal-400 mb-6">Co-Play Mode Setup</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-gray-300 mb-2">Select Mode:</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={() => handleModeChange(CoPlayModeType.AppFirstN)} variant={modeOption.type === CoPlayModeType.AppFirstN ? 'primary' : 'secondary'}>App First</Button>
+              <Button onClick={() => handleModeChange(CoPlayModeType.UserFirstN)} variant={modeOption.type === CoPlayModeType.UserFirstN ? 'primary' : 'secondary'}>User First</Button>
+              <Button onClick={() => handleModeChange(CoPlayModeType.AppFirstRandom)} variant={modeOption.type === CoPlayModeType.AppFirstRandom ? 'primary' : 'secondary'}>App First (Random)</Button>
+              <Button onClick={() => handleModeChange(CoPlayModeType.UserFirstRandom)} variant={modeOption.type === CoPlayModeType.UserFirstRandom ? 'primary' : 'secondary'}>User First (Random)</Button>
+            </div>
+          </div>
+          {[CoPlayModeType.AppFirstN, CoPlayModeType.UserFirstN].includes(modeOption.type) && (
+            <div className="flex items-center space-x-4">
+              <div>
+                <label htmlFor="app-sentences" className="block text-gray-300 mb-1">App Sentences:</label>
+                <input id="app-sentences" type="number" min="1" value={appSentences} onChange={e => setAppSentences(parseInt(e.target.value, 10))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
+              </div>
+              <div>
+                <label htmlFor="user-sentences" className="block text-gray-300 mb-1">User Sentences:</label>
+                <input id="user-sentences" type="number" min="1" value={userSentences} onChange={e => setUserSentences(parseInt(e.target.value, 10))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
+              </div>
+            </div>
+          )}
+          <Button onClick={handleStart} variant="primary" size="lg">Start</Button>
+        </div>
+        {loading && <Loader text="Planning your session..." />}
+        {error && <div className="p-4 mt-4 text-center text-red-400 bg-red-900/20 rounded">{error}</div>}
+      </div>
+    );
+  }
+
   if (loading) return <Loader text="Planning your session..." />;
-  if (error) return <div className="p-8 text-center text-red-400">{error}</div>;
+  if (error) return <div className="p-8 text-center text-red-400">{error} <Button onClick={fetchPlan} className="mt-4">Try Again</Button></div>;
   if (!plan || plan.timeline.length === 0) return <div className="p-8 text-center text-gray-400">Could not create a Co-Play plan for this text.</div>;
+
+  const sentencesToType = currentTimelineItem?.pause_require[0]?.user_sentences_to_type;
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
@@ -207,10 +253,15 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           <div className="text-center p-4 bg-green-900/30 rounded-lg">
               <h3 className="text-2xl font-bold text-green-300">Congratulations!</h3>
               <p className="text-green-400">You've completed the session.</p>
-              <Button onClick={fetchPlan} className="mt-4">Play Again</Button>
+              <Button onClick={() => setPlan(null)} className="mt-4">Play Again</Button>
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
         <>
+          {sentencesToType && (
+            <div className="text-center mb-4 p-2 bg-blue-900/30 rounded-lg">
+              <p className="text-blue-300">Please type the next {sentencesToType} sentence(s).</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-grow w-full sm:w-auto">
               <input

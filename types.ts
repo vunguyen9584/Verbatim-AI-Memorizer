@@ -68,6 +68,7 @@ export interface ErrorExplanation {
 // --- CO-PLAY TYPES ---
 export interface CoPlayPauseRequire {
   span: [number, number];
+  user_sentences_to_type?: number;
 }
 
 export interface CoPlayTimelineItem {
@@ -77,4 +78,17 @@ export interface CoPlayTimelineItem {
 
 export interface CoPlayPlan {
   timeline: CoPlayTimelineItem[];
+}
+
+export enum CoPlayModeType {
+  AppFirstN = 'app-first-n',
+  UserFirstN = 'user-first-n',
+  AppFirstRandom = 'app-first-random',
+  UserFirstRandom = 'user-first-random',
+}
+
+export interface CoPlayModeOption {
+  type: CoPlayModeType;
+  appSentences: number;
+  userSentences: number;
 }
