@@ -188,7 +188,7 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
             prompt += `The user wants to follow a pattern: the app reveals a random number of sentences, then the user types a random number of sentences. The app goes first. For each user turn, you MUST specify the number of sentences to type in the 'user_sentences_to_type' field.\n`;
             break;
         case CoPlayModeType.UserFirstRandom:
-            prompt += `The user wants to follow a pattern: the user types ${options.userSentences} sentence(s), then the app reveals ${options.appSentences} sentence(s). The user goes first. For each user turn, you MUST specify the number of sentences to type in the 'user_sentences_to_type' field.\n`;
+            prompt += `The user wants to follow a pattern: the user types a random number of sentences, then the app reveals a random number of sentences. The user goes first. For each user turn, you MUST specify the number of sentences to type in the 'user_sentences_to_type' field.\n`;
             break;
     }
 

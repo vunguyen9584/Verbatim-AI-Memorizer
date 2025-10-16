@@ -48,6 +48,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         });
       }
       setPlan(data);
+      console.log('Co-Play Plan:', data);
 
       const startsWithPause = data.timeline.length > 0 && data.timeline[0].pause_require.length > 0;
       setIsPaused(startsWithPause);
@@ -180,6 +181,26 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     fetchPlan();
   };
 
+  const handleReset = () => {
+    if (!plan) return;
+
+    setTimelineIndex(0);
+    setUserInput('');
+    setFeedback(null);
+    setHint('');
+    setIncorrectFeedback(null);
+
+    const startsWithPause = plan.timeline.length > 0 && plan.timeline[0].pause_require.length > 0;
+    setIsPaused(startsWithPause);
+
+    if (startsWithPause) {
+      const firstPauseStartToken = plan.timeline[0].pause_require[0].span[0];
+      setRevealedTokenIndex(firstPauseStartToken - 1);
+    } else {
+      setRevealedTokenIndex(-1);
+    }
+  };
+
   if (!plan) {
     return (
       <div className="p-4 md:p-8 flex flex-col h-full">
@@ -253,15 +274,21 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           <div className="text-center p-4 bg-green-900/30 rounded-lg">
               <h3 className="text-2xl font-bold text-green-300">Congratulations!</h3>
               <p className="text-green-400">You've completed the session.</p>
-              <Button onClick={() => setPlan(null)} className="mt-4">Play Again</Button>
+              <div className="flex justify-center gap-4 mt-4">
+                <Button onClick={handleReset} variant="secondary">Reset</Button>
+                <Button onClick={() => setPlan(null)} variant="primary">Play Again</Button>
+              </div>
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
         <>
-          {sentencesToType && (
-            <div className="text-center mb-4 p-2 bg-blue-900/30 rounded-lg">
-              <p className="text-blue-300">Please type the next {sentencesToType} sentence(s).</p>
-            </div>
-          )}
+          <div className="flex justify-between items-center mb-4">
+            {sentencesToType && (
+              <div className="text-center p-2 bg-blue-900/30 rounded-lg">
+                <p className="text-blue-300">Please type the next {sentencesToType} sentence(s).</p>
+              </div>
+            )}
+            <Button onClick={handleReset} variant="secondary" size="sm">Reset</Button>
+          </div>
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-grow w-full sm:w-auto">
               <input
