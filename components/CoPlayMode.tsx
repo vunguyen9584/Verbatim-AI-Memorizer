@@ -20,7 +20,8 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [isPaused, setIsPaused] = useState(true);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [hint, setHint] = useState('');
-  
+  const [incorrectFeedback, setIncorrectFeedback] = useState<React.ReactNode | null>(null);
+
   const [wpm, setWpm] = useState(120);
   const [revealedTokenIndex, setRevealedTokenIndex] = useState(-1);
   const timerRef = useRef<number | null>(null);
@@ -33,6 +34,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setUserInput('');
     setFeedback(null);
     setHint('');
+    setIncorrectFeedback(null);
     setRevealedTokenIndex(-1);
     try {
       const data = await planCoPlay(text, tokens);
@@ -43,7 +45,14 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         });
       }
       setPlan(data);
-      setIsPaused(data.timeline.length > 0);
+
+      const startsWithPause = data.timeline.length > 0 && data.timeline[0].pause_require.length > 0;
+      setIsPaused(startsWithPause);
+
+      if (startsWithPause) {
+        const firstPauseStartToken = data.timeline[0].pause_require[0].span[0];
+        setRevealedTokenIndex(firstPauseStartToken - 1);
+      }
     } catch (err) {
       setError('Failed to generate a Co-Play plan. Please try again.');
     } finally {
@@ -92,12 +101,33 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     }
   };
 
+  const generateDiff = (userInput: string, correctAnswer: string) => {
+    const userChars = userInput.trim().split('');
+    const correctChars = correctAnswer.trim().split('');
+    
+    return (
+      <p className="font-mono bg-gray-800 p-2 rounded mt-2 text-left whitespace-pre-wrap break-words">
+        {correctChars.map((char, index) => {
+          if (index < userChars.length && userChars[index].toLowerCase() === char.toLowerCase()) {
+            return <span key={index} className="text-green-400 opacity-75">{char}</span>;
+          } else {
+            return <span key={index} className="text-red-400 underline bg-red-900/50">{char}</span>;
+          }
+        })}
+      </p>
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentTimelineItem || currentTimelineItem.pause_require.length === 0) return;
 
-    if (userInput.trim().toLowerCase() === correctAnswer.trim().toLowerCase()) {
+    const trimmedUserInput = userInput.trim();
+    const trimmedCorrectAnswer = correctAnswer.trim();
+
+    if (trimmedUserInput.toLowerCase() === trimmedCorrectAnswer.toLowerCase()) {
       setFeedback('correct');
+      setIncorrectFeedback(null);
       setTimeout(() => {
         const nextRevealStartIndex = prevTimelineItem?.reveal_until_token ?? 0;
         setRevealedTokenIndex(nextRevealStartIndex -1);
@@ -105,9 +135,10 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         setUserInput('');
         setFeedback(null);
         setHint('');
-      }, 1000);
+      }, 300);
     } else {
       setFeedback('incorrect');
+      setIncorrectFeedback(generateDiff(trimmedUserInput, trimmedCorrectAnswer));
     }
   };
   
@@ -135,7 +166,14 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
               {token}
             </span>
           ))}
-           {isPaused && !isFinished && currentTimelineItem?.pause_require.length > 0 && <span className="bg-teal-500/20 text-teal-200 p-1 rounded-md animate-pulse">...</span>}
+           {isPaused && !isFinished && currentTimelineItem?.pause_require.length > 0 && (
+            tokens.slice(startTokenOfPause, endTokenOfPause + 1).map((token, i) => {
+                if (token.trim() === '') {
+                    return <span key={`placeholder-${i}`}>{token}</span>;
+                }
+                return <span key={`placeholder-${i}`} className="bg-gray-700 text-transparent rounded-sm select-none">{token}</span>;
+            })
+           )}
         </p>
       </div>
 
@@ -155,6 +193,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                 onChange={(e) => {
                   setUserInput(e.target.value)
                   setFeedback(null)
+                  setIncorrectFeedback(null)
                 }}
                 placeholder="Type the next part..."
                 className={`w-full bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 pr-12 ${
@@ -177,6 +216,12 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
               Continue
             </Button>
           </form>
+          {incorrectFeedback && (
+            <div className="mt-3 text-sm text-gray-400">
+              <p className="font-semibold mb-1 text-left">Suggestion:</p>
+              {incorrectFeedback}
+            </div>
+          )}
           {hint && (
             <div className="mt-3 text-center text-sm text-gray-400">
               Hint: <span className="font-mono bg-gray-700 p-1 rounded">{hint}</span>
