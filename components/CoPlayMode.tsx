@@ -85,7 +85,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           
           if (nextIndex >= plan.timeline.length) {
             setIsPaused(true);
-            return prevIndex;
+            return nextIndex; // Correctly advance to finish
           }
 
           const nextTimelineItem = plan.timeline[nextIndex];
