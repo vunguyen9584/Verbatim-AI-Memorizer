@@ -41,6 +41,11 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setRevealedTokenIndex(-1);
     try {
       const data = await planCoPlay(text, tokens, modeOption);
+
+      if (!data || !data.timeline) {
+        throw new Error("Failed to generate a valid Co-Play plan.");
+      }
+
       if (data.timeline.length > 0) {
         data.timeline.push({
             reveal_until_token: tokens.length,
@@ -48,7 +53,6 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         });
       }
       setPlan(data);
-      console.log('Co-Play Plan:', data);
 
       const startsWithPause = data.timeline.length > 0 && data.timeline[0].pause_require.length > 0;
       setIsPaused(startsWithPause);
@@ -67,7 +71,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   // Remove useEffect that fetches plan on load
 
   const currentTimelineItem = plan?.timeline[timelineIndex];
-  const prevTimelineItem = timelineIndex > 0 ? plan.timeline[timelineIndex - 1] : null;
+  const prevTimelineItem = timelineIndex > 0 ? plan?.timeline[timelineIndex - 1] : null;
   const revealUntilToken = currentTimelineItem?.reveal_until_token ?? (isPaused ? revealedTokenIndex : tokens.length);
 
   useEffect(() => {
