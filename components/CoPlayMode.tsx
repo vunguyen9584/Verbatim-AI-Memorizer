@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CoPlayPlan, CoPlayModeType, CoPlayModeOption } from '../types';
 import { planCoPlay } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
 import { LightbulbIcon } from './common/Icon';
+import { parseSentences } from '../utils/sentenceParser';
 
 interface CoPlayModeProps {
   text: string;
@@ -22,6 +24,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [hint, setHint] = useState('');
   const [hintWords, setHintWords] = useState(0);
   const [incorrectFeedback, setIncorrectFeedback] = useState<React.ReactNode | null>(null);
+  const [currentUserSentenceIndex, setCurrentUserSentenceIndex] = useState(0);
 
   const [wpm, setWpm] = useState(200);
   const [revealedTokenIndex, setRevealedTokenIndex] = useState(-1);
@@ -38,6 +41,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setHintWords(0);
     setIncorrectFeedback(null);
     setRevealedTokenIndex(-1);
+    setCurrentUserSentenceIndex(0);
     try {
       const data = await planCoPlay(text, tokens, modeOption);
 
@@ -67,10 +71,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     }
   }, [text, tokens, modeOption]);
 
-  // Remove useEffect that fetches plan on load
+  useEffect(() => {
+    if (isPaused && currentTimelineItem?.pause_require.length > 0) {
+      setCurrentUserSentenceIndex(0);
+    }
+  }, [isPaused, timelineIndex]);
 
   const currentTimelineItem = plan?.timeline[timelineIndex];
-  const prevTimelineItem = timelineIndex > 0 ? plan?.timeline[timelineIndex - 1] : null;
   const revealUntilToken = currentTimelineItem?.reveal_until_token ?? (isPaused ? revealedTokenIndex : tokens.length);
 
   useEffect(() => {
@@ -110,8 +117,18 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const endTokenOfPause = currentTimelineItem?.pause_require[0]?.span[1] ?? 0;
   const correctAnswer = tokens.slice(startTokenOfPause, endTokenOfPause + 1).join('');
 
+  const turnSentences = useMemo(() => {
+    if (!isPaused || !currentTimelineItem || currentTimelineItem.pause_require.length === 0) return [];
+    const pauseInfo = currentTimelineItem.pause_require[0];
+    const turnTokens = tokens.slice(pauseInfo.span[0], pauseInfo.span[1] + 1);
+    return parseSentences(turnTokens).map(s => s.text);
+  }, [isPaused, currentTimelineItem, tokens]);
+
   const handleHint = () => {
-    const words = correctAnswer.trim().split(/\s+/).filter(w => w.length > 0);
+    const isMultiSentenceTurn = turnSentences.length > 1;
+    const answerForHint = isMultiSentenceTurn ? turnSentences[currentUserSentenceIndex] : correctAnswer;
+
+    const words = answerForHint.trim().split(/\s+/).filter(w => w.length > 0);
     if (hintWords < words.length) {
       const newHint = words.slice(0, hintWords + 1).join(' ');
       setHint(newHint);
@@ -164,40 +181,55 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     e.preventDefault();
     if (!currentTimelineItem || currentTimelineItem.pause_require.length === 0) return;
 
+    const isMultiSentenceTurn = turnSentences.length > 1;
     const trimmedUserInput = userInput.trim();
-    const trimmedCorrectAnswer = correctAnswer.trim();
+    
+    const answerForThisSubmission = (
+      isMultiSentenceTurn
+        ? turnSentences[currentUserSentenceIndex]
+        : correctAnswer
+    ).trim();
 
-    if (trimmedUserInput.toLowerCase() === trimmedCorrectAnswer.toLowerCase()) {
+    if (trimmedUserInput.toLowerCase() === answerForThisSubmission.toLowerCase()) {
       setFeedback('correct');
       setIncorrectFeedback(null);
 
-      setTimeout(() => {
-        // Reveal the text the user just typed.
-        const endOfTypedPhrase = currentTimelineItem.pause_require[0].span[1];
-        setRevealedTokenIndex(endOfTypedPhrase);
+      const isLastSentenceOfTurn = currentUserSentenceIndex >= turnSentences.length - 1;
 
-        // Move to the next timeline item.
-        const nextIndex = timelineIndex + 1;
-        setTimelineIndex(nextIndex);
+      if (isMultiSentenceTurn && !isLastSentenceOfTurn) {
+        // More sentences to go in this turn
+        setTimeout(() => {
+          setCurrentUserSentenceIndex(prev => prev + 1);
+          setUserInput('');
+          setFeedback(null);
+          setHint('');
+          setHintWords(0);
+        }, 300);
+      } else {
+        // Turn finished (or was single sentence turn)
+        setTimeout(() => {
+          const endOfTypedPhrase = currentTimelineItem.pause_require[0].span[1];
+          setRevealedTokenIndex(endOfTypedPhrase);
 
-        // Check if the new timeline item requires a pause.
-        const nextTimelineItem = plan?.timeline[nextIndex];
-        if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
-          setIsPaused(true); // The next phase is another pause.
-        } else {
-          setIsPaused(false); // The next phase is auto-reveal.
-        }
-        
-        // Reset input fields for the next round.
-        setUserInput('');
-        setFeedback(null);
-        setHint('');
-        setHintWords(0);
+          const nextIndex = timelineIndex + 1;
+          setTimelineIndex(nextIndex);
 
-      }, 300);
+          const nextTimelineItem = plan?.timeline[nextIndex];
+          if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
+            setIsPaused(true);
+          } else {
+            setIsPaused(false);
+          }
+          
+          setUserInput('');
+          setFeedback(null);
+          setHint('');
+          setHintWords(0);
+        }, 300);
+      }
     } else {
       setFeedback('incorrect');
-      setIncorrectFeedback(generateDiff(trimmedUserInput, trimmedCorrectAnswer));
+      setIncorrectFeedback(generateDiff(trimmedUserInput, answerForThisSubmission));
     }
   };
   
@@ -220,6 +252,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setHint('');
     setHintWords(0);
     setIncorrectFeedback(null);
+    setCurrentUserSentenceIndex(0);
 
     const startsWithPause = plan.timeline.length > 0 && plan.timeline[0].pause_require.length > 0;
     setIsPaused(startsWithPause);
@@ -271,6 +304,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   if (!plan || plan.timeline.length === 0) return <div className="p-8 text-center text-gray-400">Could not create a Co-Play plan for this text.</div>;
 
   const sentencesToType = currentTimelineItem?.pause_require[0]?.user_sentences_to_type;
+  const isMultiSentenceTurn = turnSentences.length > 1;
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
@@ -315,7 +349,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           <div className="flex justify-between items-center mb-4">
             {sentencesToType && (
               <div className="text-center p-2 bg-blue-900/30 rounded-lg">
-                <p className="text-blue-300">Please type the next {sentencesToType} sentence(s).</p>
+                {isMultiSentenceTurn ? (
+                  <p className="text-blue-300">
+                    Please type sentence {currentUserSentenceIndex + 1} of {turnSentences.length}.
+                  </p>
+                ) : (
+                  <p className="text-blue-300">Please type the next sentence.</p>
+                )}
               </div>
             )}
             <Button onClick={handleReset} variant="secondary" size="sm">Reset</Button>
@@ -361,6 +401,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
               Hint: <span className="font-mono bg-gray-700 p-1 rounded">{hint}</span>
             </div>
           )}
+          {incorrectFeedback}
         </>
       ) : (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
