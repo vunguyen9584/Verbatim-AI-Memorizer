@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CoPlayPlan, CoPlayModeType, CoPlayModeOption } from '../types';
 import { planCoPlay } from '../services/geminiService';
@@ -13,8 +12,6 @@ interface CoPlayModeProps {
 
 const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [modeOption, setModeOption] = useState<CoPlayModeOption>({ type: CoPlayModeType.AppFirstN, appSentences: 1, userSentences: 1 });
-  const [appSentences, setAppSentences] = useState(1);
-  const [userSentences, setUserSentences] = useState(1);
   const [plan, setPlan] = useState<CoPlayPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -207,11 +204,10 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const isFinished = timelineIndex >= (plan?.timeline.length ?? 0);
 
   const handleModeChange = (type: CoPlayModeType) => {
-    setModeOption({ type, appSentences, userSentences });
+    setModeOption(prev => ({ ...prev, type }));
   };
 
   const handleStart = () => {
-    setModeOption({ type: modeOption.type, appSentences, userSentences });
     fetchPlan();
   };
 
@@ -254,11 +250,11 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
             <div className="flex items-center space-x-4">
               <div>
                 <label htmlFor="app-sentences" className="block text-gray-300 mb-1">App Sentences:</label>
-                <input id="app-sentences" type="number" min="1" value={appSentences} onChange={e => setAppSentences(parseInt(e.target.value, 10))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
+                <input id="app-sentences" type="number" min="1" value={modeOption.appSentences} onChange={e => setModeOption(prev => ({ ...prev, appSentences: parseInt(e.target.value, 10) || 1 }))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
               </div>
               <div>
                 <label htmlFor="user-sentences" className="block text-gray-300 mb-1">User Sentences:</label>
-                <input id="user-sentences" type="number" min="1" value={userSentences} onChange={e => setUserSentences(parseInt(e.target.value, 10))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
+                <input id="user-sentences" type="number" min="1" value={modeOption.userSentences} onChange={e => setModeOption(prev => ({ ...prev, userSentences: parseInt(e.target.value, 10) || 1 }))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
               </div>
             </div>
           )}
