@@ -319,27 +319,32 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
       
       <div className="max-h-64 overflow-y-auto bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 mb-6">
         <p className="text-xl leading-loose whitespace-pre-wrap">
-          {tokens.map((token, index) => (
-            <span
-              key={index}
-              ref={index === revealedTokenIndex ? revealedTokenRef : null}
-              className={`transition-colors duration-200 ${
-                index <= revealedTokenIndex ? 'text-teal-300' : 'text-transparent'
-              } ${
-                index === revealedTokenIndex ? 'bg-teal-500/20 rounded' : ''
-              }`}
-            >
-              {token}
-            </span>
-          ))}
-           {isPaused && !isFinished && currentTimelineItem?.pause_require.length > 0 && (
-            tokens.slice(startTokenOfPause, endTokenOfPause + 1).map((token, i) => {
-                if (token.trim() === '') {
-                    return <span key={`placeholder-${i}`}>{token}</span>;
-                }
-                return <span key={`placeholder-${i}`} className="bg-gray-700 text-transparent rounded-sm select-none">{token}</span>;
-            })
-           )}
+          {tokens.map((token, index) => {
+            const isRevealed = index <= revealedTokenIndex;
+            const isCurrentlyRevealing = index === revealedTokenIndex;
+            const isPartOfPausePlaceholder = isPaused && !isFinished && currentTimelineItem?.pause_require.length > 0 && index >= startTokenOfPause && index <= endTokenOfPause;
+
+            if (isPartOfPausePlaceholder) {
+              if (token.trim() === '') {
+                return <span key={index}>{token}</span>;
+              }
+              return <span key={index} className="bg-gray-700 text-transparent rounded-sm select-none">{token}</span>;
+            }
+
+            return (
+              <span
+                key={index}
+                ref={isCurrentlyRevealing ? revealedTokenRef : null}
+                className={`transition-colors duration-200 ${
+                  isRevealed ? 'text-teal-300' : 'text-transparent'
+                } ${
+                  isCurrentlyRevealing ? 'bg-teal-500/20 rounded' : ''
+                }`}
+              >
+                {token}
+              </span>
+            );
+          })}
         </p>
       </div>
 
