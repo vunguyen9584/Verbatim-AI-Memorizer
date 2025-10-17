@@ -360,12 +360,6 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           </Button>
           </div>
           </form>
-          {incorrectFeedback && (
-            <div className="mt-3 text-sm text-gray-400">
-              <p className="font-semibold mb-1 text-left">Suggestion:</p>
-              {incorrectFeedback}
-            </div>
-          )}
           {hint && (
             <div className="mt-3 text-center text-sm text-gray-400">
               Hint: <span className="font-mono bg-gray-700 p-1 rounded">{hint}</span>
