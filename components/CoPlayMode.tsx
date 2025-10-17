@@ -117,6 +117,29 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     }
   };
 
+  const handleShowAnswer = () => {
+    if (!currentTimelineItem || currentTimelineItem.pause_require.length === 0) return;
+
+    const endOfTypedPhrase = currentTimelineItem.pause_require[0].span[1];
+    setRevealedTokenIndex(endOfTypedPhrase);
+
+    const nextIndex = timelineIndex + 1;
+    setTimelineIndex(nextIndex);
+
+    const nextTimelineItem = plan?.timeline[nextIndex];
+    if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
+      setIsPaused(true);
+    } else {
+      setIsPaused(false);
+    }
+
+    // Reset input fields
+    setUserInput('');
+    setFeedback(null);
+    setHint('');
+    setIncorrectFeedback(null);
+  };
+
   const generateDiff = (userInput: string, correctAnswer: string) => {
     const userChars = userInput.trim().split('');
     const correctChars = correctAnswer.trim().split('');
@@ -310,19 +333,24 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                 }`}
                 autoFocus
               />
-              <Button 
-                onClick={handleHint} 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                onClick={handleHint}
+                variant="ghost"
+                size="icon"
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-400"
                 aria-label="Get a hint"
               >
                 <LightbulbIcon className="w-6 h-6" />
               </Button>
             </div>
-            <Button type="submit" variant="primary" className="w-full sm:w-auto">
-              Continue
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" variant="primary" className="flex-1 sm:flex-none">
+            Continue
+          </Button>
+          <Button onClick={handleShowAnswer} variant="secondary" className="flex-1 sm:flex-none">
+          Show Answer
+          </Button>
+          </div>
           </form>
           {incorrectFeedback && (
             <div className="mt-3 text-sm text-gray-400">
