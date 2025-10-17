@@ -79,7 +79,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   useEffect(() => {
     if (!plan) return;
 
-    if (!isPaused && revealedTokenIndex < revealUntilToken) {
+    if (!isPaused && revealedTokenIndex < revealUntilToken-1) {
       const delay = 60000 / wpm;
       timerRef.current = window.setTimeout(() => {
         setRevealedTokenIndex(prev => prev + 1);
