@@ -354,22 +354,25 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
         <>
-          <div className="flex justify-between items-center mb-4">
+          <div class="flex justify-between items-center mb-4">
             {sentencesToType && (
-              <div className="text-center p-2 bg-blue-900/30 rounded-lg">
+              <div class="text-center p-2 bg-blue-900/30 rounded-lg">
                 {isMultiSentenceTurn ? (
-                  <p className="text-blue-300">
+                  <p class="text-blue-300">
                     Please type sentence {currentUserSentenceIndex + 1} of {turnSentences.length}.
                   </p>
                 ) : (
-                  <p className="text-blue-300">Please type the next sentence.</p>
+                  <p class="text-blue-300">Please type the next sentence.</p>
                 )}
               </div>
             )}
-            <Button onClick={handleReset} variant="secondary" size="sm">Reset</Button>
+            <div class="flex gap-2">
+              <Button onClick={handleReset} variant="secondary" size="sm">Reset</Button>
+              <Button onClick={() => setPlan(null)} variant="secondary" size="sm">End Session</Button>
+            </div>
           </div>
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative flex-grow w-full sm:w-auto">
+          <form onSubmit={handleSubmit} class="flex flex-col sm:flex-row items-center gap-3">
+            <div class="relative flex-grow w-full sm:w-auto">
               <input
                 type="text"
                 value={userInput}
@@ -379,7 +382,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                   setIncorrectFeedback(null)
                 }}
                 placeholder="Type the next part..."
-                className={`w-full bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 pr-12 ${
+                class={`w-full bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 pr-12 ${
                   feedback === 'correct' ? 'border-green-500' : 
                   feedback === 'incorrect' ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
                 }`}
@@ -390,35 +393,35 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                 onClick={handleHint}
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-400"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-400"
                 aria-label="Get a hint"
               >
-                <LightbulbIcon className="w-6 h-6" />
+                <LightbulbIcon class="w-6 h-6" />
               </Button>
             </div>
-            <div className="flex gap-2">
-              <Button type="submit" variant="primary" className="flex-1 sm:flex-none">
+            <div class="flex gap-2">
+              <Button type="submit" variant="primary" class="flex-1 sm:flex-none">
             Continue
           </Button>
-          <Button onClick={handleShowAnswer} variant="secondary" className="flex-1 sm:flex-none">
+          <Button onClick={handleShowAnswer} variant="secondary" class="flex-1 sm:flex-none">
           Show Answer
           </Button>
           </div>
           </form>
           {hint && (
-            <div className="mt-3 text-center text-sm text-gray-400">
-              Hint: <span className="font-mono bg-gray-700 p-1 rounded">{hint}</span>
+            <div class="mt-3 text-center text-sm text-gray-400">
+              Hint: <span class="font-mono bg-gray-700 p-1 rounded">{hint}</span>
             </div>
           )}
           {incorrectFeedback}
         </>
       ) : (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-center text-gray-400">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-center text-gray-400">
                 <p>Revealing text...</p>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="wpm" className="text-sm font-medium text-gray-400">Speed (WPM):</label>
+            <div class="flex items-center gap-2">
+              <label htmlFor="wpm" class="text-sm font-medium text-gray-400">Speed (WPM):</label>
               <input
                 type="range"
                 id="wpm"
@@ -427,10 +430,11 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                 step="10"
                 value={wpm}
                 onChange={(e) => setWpm(Number(e.target.value))}
-                className="w-32 md:w-48"
+                class="w-32 md:w-48"
               />
-              <span className="font-mono text-teal-300 w-10 text-center">{wpm}</span>
+              <span class="font-mono text-teal-300 w-10 text-center">{wpm}</span>
             </div>
+            <Button onClick={() => setPlan(null)} variant="secondary" size="sm">End Session</Button>
         </div>
       )}
     </div>
