@@ -378,6 +378,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                 autoFocus
               />
               <Button
+                type="button"
                 onClick={handleHint}
                 variant="ghost"
                 size="icon"
