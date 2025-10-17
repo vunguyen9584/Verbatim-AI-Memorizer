@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CoPlayPlan, CoPlayModeType, CoPlayModeOption } from '../types';
 import { planCoPlay } from '../services/geminiService';
@@ -29,6 +28,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [wpm, setWpm] = useState(200);
   const [revealedTokenIndex, setRevealedTokenIndex] = useState(-1);
   const timerRef = useRef<number | null>(null);
+  const revealedTokenRef = useRef<HTMLSpanElement | null>(null);
 
   const fetchPlan = useCallback(async () => {
     setLoading(true);
@@ -112,6 +112,12 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     };
   }, [isPaused, revealedTokenIndex, wpm, plan, timelineIndex, revealUntilToken]);
 
+  useEffect(() => {
+    if (revealedTokenRef.current) {
+      revealedTokenRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [revealedTokenIndex]);
+
 
   const startTokenOfPause = currentTimelineItem?.pause_require[0]?.span[0] ?? 0;
   const endTokenOfPause = currentTimelineItem?.pause_require[0]?.span[1] ?? 0;
@@ -161,8 +167,9 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   };
 
   const generateDiff = (userInput: string, correctAnswer: string) => {
-    const userChars = userInput.trim().split('');
-    const correctChars = correctAnswer.trim().split('');
+    const cleanCorrectAnswer = correctAnswer.trim().replace(/[.,\s]+$/, "");
+    const userChars = userInput.trim().replace(/[.,\s]+$/, "").split('');
+    const correctChars = cleanCorrectAnswer.split('');
     
     return (
       <p className="font-mono bg-gray-800 p-2 rounded mt-2 text-left whitespace-pre-wrap break-words">
@@ -182,13 +189,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     if (!currentTimelineItem || currentTimelineItem.pause_require.length === 0) return;
 
     const isMultiSentenceTurn = turnSentences.length > 1;
-    const trimmedUserInput = userInput.trim();
+    const trimmedUserInput = userInput.trim().replace(/[.,\s]+$/, '');
     
     const answerForThisSubmission = (
       isMultiSentenceTurn
         ? turnSentences[currentUserSentenceIndex]
         : correctAnswer
-    ).trim();
+    ).trim().replace(/[.,\s]+$/, '');
 
     if (trimmedUserInput.toLowerCase() === answerForThisSubmission.toLowerCase()) {
       setFeedback('correct');
@@ -315,6 +322,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           {tokens.map((token, index) => (
             <span
               key={index}
+              ref={index === revealedTokenIndex ? revealedTokenRef : null}
               className={`transition-colors duration-200 ${
                 index <= revealedTokenIndex ? 'text-teal-300' : 'text-transparent'
               } ${
@@ -372,7 +380,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                 }}
                 placeholder="Type the next part..."
                 className={`w-full bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 pr-12 ${
-                  feedback === 'correct' ? 'border-green-500' :
+                  feedback === 'correct' ? 'border-green-500' : 
                   feedback === 'incorrect' ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
                 }`}
                 autoFocus
