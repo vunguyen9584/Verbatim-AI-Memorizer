@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { QuizData, CoPlayPlan, CoPlayModeOption, CoPlayModeType } from '../types';
+import { QuizData, CoPlayPlan, CoPlayModeOption, CoPlayModeType, StoryElements, AcrosticKeywords, MemoryStoryResult, MemoryAcrosticResult, MemoryMethod } from '../types';
 import { logger } from '../utils/debugLogger';
 
 // Fix: Initialize the GoogleGenAI client to interact with the Gemini API.
@@ -98,6 +98,30 @@ const coPlayPlanSchema = {
         }
     },
     required: ['timeline']
+};
+
+const storyElementsSchema = {
+    type: Type.OBJECT,
+    properties: {
+        elements: {
+            type: Type.ARRAY,
+            description: "List of visual elements extracted from each sentence.",
+            items: { type: Type.STRING }
+        }
+    },
+    required: ['elements']
+};
+
+const acrosticKeywordsSchema = {
+    type: Type.OBJECT,
+    properties: {
+        keywords: {
+            type: Type.ARRAY,
+            description: "List of key words extracted from each sentence.",
+            items: { type: Type.STRING }
+        }
+    },
+    required: ['keywords']
 };
 
 
@@ -233,5 +257,104 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
         console.error("Error planning co-play:", e);
         const errorMessage = e instanceof Error ? e.message : "Failed to generate a Co-Play plan. The AI model may be temporarily unavailable.";
         throw new Error(errorMessage);
+    }
+};
+
+export const generateMemoryTips = async (
+    text: string,
+    method: MemoryMethod
+): Promise<MemoryStoryResult | MemoryAcrosticResult> => {
+    const model = 'gemini-2.0-flash';
+
+    let analysisPrompt = '';
+    let analysisSchema;
+    let synthesisPrompt = '';
+
+    if (method === MemoryMethod.STORY) {
+        analysisPrompt = `Bạn là một chuyên gia phân tích văn bản để tạo câu chuyện gợi nhớ. Nhiệm vụ của bạn là đọc văn bản sau và rút ra những yếu tố hình ảnh cốt lõi, dễ hình dung nhất từ mỗi câu. Các yếu tố này nên là danh từ cụ thể, động từ hành động, hoặc hình ảnh sống động.
+
+Văn bản:
+---
+${text}
+---
+
+Trả về JSON với mảng "elements" chứa các yếu tố hình ảnh theo thứ tự của các câu.`;
+
+        analysisSchema = storyElementsSchema;
+
+        synthesisPrompt = `Bạn là một người kể chuyện sáng tạo chuyên tạo ra các câu chuyện gợi nhớ. Dựa trên danh sách các yếu tố hình ảnh theo thứ tự dưới đây, hãy sáng tác một câu chuyện ngắn, phi lý, hài hước và thật sống động để liên kết tất cả chúng lại với nhau. Câu chuyện phải dễ hình dung để giúp người dùng ghi nhớ thứ tự của các yếu tố.
+
+Các yếu tố hình ảnh:
+{{json_elements}}
+
+Câu chuyện gợi nhớ của bạn:`;
+
+    } else if (method === MemoryMethod.ACROSTIC) {
+        analysisPrompt = `Bạn là một chuyên gia phân tích văn bản để tạo câu viết tắt gợi nhớ. Nhiệm vụ của bạn là đọc văn bản sau và rút ra những từ khóa quan trọng nhất từ mỗi câu, những từ đại diện cho ý chính của câu đó.
+
+Văn bản:
+---
+${text}
+---
+
+Trả về JSON với mảng "keywords" chứa các từ khóa theo thứ tự của các câu.`;
+
+        analysisSchema = acrosticKeywordsSchema;
+
+        synthesisPrompt = `Bạn là một chuyên gia tạo câu gợi nhớ (acrostic). Dựa vào chuỗi ký tự đầu vào, hãy tạo ra một câu văn hoàn chỉnh, dễ nhớ, và đúng ngữ pháp, trong đó từ đầu tiên bắt đầu bằng ký tự thứ nhất, từ thứ hai bắt đầu bằng ký tự thứ hai, và cứ thế tiếp tục.
+
+Chuỗi ký tự: {{initial_letters}}
+
+Câu gợi nhớ của bạn:`;
+    }
+
+    try {
+        // Step 1: Analysis
+        logger.log('GEMINI_REQUEST', { type: 'memory_analysis', prompt: analysisPrompt, method });
+
+        const analysisResponse = await ai.models.generateContent({
+            model,
+            contents: analysisPrompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: analysisSchema,
+            },
+        });
+
+        const analysisJson = JSON.parse(analysisResponse.text.trim());
+        logger.log('GEMINI_RESPONSE_ANALYSIS', { analysisJson });
+
+        // Step 2: Synthesis
+        let finalPrompt = synthesisPrompt;
+
+        if (method === MemoryMethod.STORY) {
+            const elements = (analysisJson as StoryElements).elements;
+            finalPrompt = synthesisPrompt.replace('{{json_elements}}', JSON.stringify(elements));
+        } else {
+            const keywords = (analysisJson as AcrosticKeywords).keywords;
+            const initialLetters = keywords.map(k => k.charAt(0).toUpperCase()).join('');
+            finalPrompt = synthesisPrompt.replace('{{initial_letters}}', initialLetters);
+        }
+
+        logger.log('GEMINI_REQUEST', { type: 'memory_synthesis', prompt: finalPrompt, method });
+
+        const synthesisResponse = await ai.models.generateContent({
+            model,
+            contents: finalPrompt,
+        });
+
+        const result = synthesisResponse.text.trim();
+        logger.log('GEMINI_RESPONSE_SYNTHESIS', { result });
+
+        if (method === MemoryMethod.STORY) {
+            return { story: result } as MemoryStoryResult;
+        } else {
+            return { sentence: result } as MemoryAcrosticResult;
+        }
+
+    } catch (e) {
+        logger.log('GEMINI_ERROR', { type: 'generateMemoryTips', error: e, method });
+        console.error("Error generating memory tips:", e);
+        throw new Error("Failed to generate memory tips. The AI model may be temporarily unavailable.");
     }
 };

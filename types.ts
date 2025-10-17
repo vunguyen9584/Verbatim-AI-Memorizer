@@ -1,7 +1,8 @@
 export enum LearningMode {
   QUIZ = 'Quiz',
   PLAY = 'Play',
-  CO_PLAY = 'Co-Play'
+  CO_PLAY = 'Co-Play',
+  MEMORY_TIPS = 'Memory Tips'
 }
 
 // --- QUIZ TYPES ---
@@ -91,4 +92,27 @@ export interface CoPlayModeOption {
   type: CoPlayModeType;
   appSentences: number;
   userSentences: number;
+}
+
+// --- MEMORY TIPS TYPES ---
+
+export enum MemoryMethod {
+  STORY = 'Story',
+  ACROSTIC = 'Acrostic'
+}
+
+export interface StoryElements {
+  elements: string[];
+}
+
+export interface AcrosticKeywords {
+  keywords: string[];
+}
+
+export interface MemoryStoryResult {
+  story: string;
+}
+
+export interface MemoryAcrosticResult {
+  sentence: string;
 }

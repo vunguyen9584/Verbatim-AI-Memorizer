@@ -6,6 +6,7 @@ import ModeSelector from './components/ModeSelector';
 import QuizMode from './components/QuizMode';
 import PlayMode from './components/PlayMode';
 import CoPlayMode from './components/CoPlayMode';
+import MemorizeTipsMode from './components/MemorizeTipsMode';
 import { BrainCircuitIcon, BugIcon } from './components/common/Icon';
 import DebugPanel from './components/DebugPanel';
 
@@ -45,6 +46,8 @@ const App: React.FC = () => {
         return <PlayMode tokens={tokens} />;
       case LearningMode.CO_PLAY:
         return <CoPlayMode text={text} tokens={tokens} />;
+      case LearningMode.MEMORY_TIPS:
+        return <MemorizeTipsMode text={text} />;
       default:
         return <div className="text-gray-400">Select a mode to start.</div>;
     }

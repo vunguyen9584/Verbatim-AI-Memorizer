@@ -15,7 +15,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ currentMode, onSelectMode }
   return (
     <Card>
       <h2 className="text-xl font-bold text-white mb-4">Learning Mode</h2>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {modes.map((mode) => (
           <Button
             key={mode}
