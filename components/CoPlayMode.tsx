@@ -23,6 +23,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [isPaused, setIsPaused] = useState(true);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [hint, setHint] = useState('');
+  const [hintWords, setHintWords] = useState(0);
   const [incorrectFeedback, setIncorrectFeedback] = useState<React.ReactNode | null>(null);
 
   const [wpm, setWpm] = useState(200);
@@ -37,6 +38,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setUserInput('');
     setFeedback(null);
     setHint('');
+    setHintWords(0);
     setIncorrectFeedback(null);
     setRevealedTokenIndex(-1);
     try {
@@ -112,8 +114,11 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const correctAnswer = tokens.slice(startTokenOfPause, endTokenOfPause + 1).join('');
 
   const handleHint = () => {
-    if (hint.length < correctAnswer.length) {
-      setHint(correctAnswer.substring(0, hint.length + 1));
+    const words = correctAnswer.trim().split(/\s+/).filter(w => w.length > 0);
+    if (hintWords < words.length) {
+      const newHint = words.slice(0, hintWords + 1).join(' ');
+      setHint(newHint);
+      setHintWords(hintWords + 1);
     }
   };
 
@@ -137,6 +142,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setUserInput('');
     setFeedback(null);
     setHint('');
+    setHintWords(0);
     setIncorrectFeedback(null);
   };
 
@@ -189,6 +195,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         setUserInput('');
         setFeedback(null);
         setHint('');
+        setHintWords(0);
 
       }, 300);
     } else {
@@ -215,6 +222,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setUserInput('');
     setFeedback(null);
     setHint('');
+    setHintWords(0);
     setIncorrectFeedback(null);
 
     const startsWithPause = plan.timeline.length > 0 && plan.timeline[0].pause_require.length > 0;

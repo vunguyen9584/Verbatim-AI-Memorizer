@@ -253,7 +253,7 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
                 const spanEnd = sentences[typeUntil - 1]?.tokenEnd ?? tokens.length - 1;
 
                 timeline.push({
-                    reveal_until_token: spanStart,
+                    reveal_until_token: Math.max(spanStart - 1, -1),
                     pause_require: [{
                         span: [spanStart, spanEnd],
                         user_sentences_to_type: sentencesToType,
