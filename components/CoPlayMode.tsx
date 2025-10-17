@@ -280,7 +280,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     <div className="p-4 md:p-8 flex flex-col h-full">
       <h2 className="text-2xl font-bold text-teal-400 mb-6">Co-Play Mode</h2>
       
-      <div className="flex-grow bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 mb-6">
+      <div className="max-h-64 overflow-y-auto bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 mb-6">
         <p className="text-xl leading-loose whitespace-pre-wrap">
           {tokens.map((token, index) => (
             <span
