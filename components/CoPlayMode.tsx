@@ -1,10 +1,10 @@
-
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CoPlayPlan, CoPlayModeType, CoPlayModeOption } from '../types';
 import { planCoPlay } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
 import { LightbulbIcon } from './common/Icon';
+import { parseSentences } from '../utils/sentenceParser';
 
 interface CoPlayModeProps {
   text: string;
@@ -13,8 +13,6 @@ interface CoPlayModeProps {
 
 const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [modeOption, setModeOption] = useState<CoPlayModeOption>({ type: CoPlayModeType.AppFirstN, appSentences: 1, userSentences: 1 });
-  const [appSentences, setAppSentences] = useState(1);
-  const [userSentences, setUserSentences] = useState(1);
   const [plan, setPlan] = useState<CoPlayPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,11 +21,14 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [isPaused, setIsPaused] = useState(true);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [hint, setHint] = useState('');
+  const [hintWords, setHintWords] = useState(0);
   const [incorrectFeedback, setIncorrectFeedback] = useState<React.ReactNode | null>(null);
+  const [currentUserSentenceIndex, setCurrentUserSentenceIndex] = useState(0);
 
   const [wpm, setWpm] = useState(200);
   const [revealedTokenIndex, setRevealedTokenIndex] = useState(-1);
   const timerRef = useRef<number | null>(null);
+  const revealedTokenRef = useRef<HTMLSpanElement | null>(null);
 
   const fetchPlan = useCallback(async () => {
     setLoading(true);
@@ -37,8 +38,10 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setUserInput('');
     setFeedback(null);
     setHint('');
+    setHintWords(0);
     setIncorrectFeedback(null);
     setRevealedTokenIndex(-1);
+    setCurrentUserSentenceIndex(0);
     try {
       const data = await planCoPlay(text, tokens, modeOption);
 
@@ -68,16 +71,19 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     }
   }, [text, tokens, modeOption]);
 
-  // Remove useEffect that fetches plan on load
+  useEffect(() => {
+    if (isPaused && currentTimelineItem?.pause_require.length > 0) {
+      setCurrentUserSentenceIndex(0);
+    }
+  }, [isPaused, timelineIndex]);
 
   const currentTimelineItem = plan?.timeline[timelineIndex];
-  const prevTimelineItem = timelineIndex > 0 ? plan?.timeline[timelineIndex - 1] : null;
   const revealUntilToken = currentTimelineItem?.reveal_until_token ?? (isPaused ? revealedTokenIndex : tokens.length);
 
   useEffect(() => {
     if (!plan) return;
 
-    if (!isPaused && revealedTokenIndex < revealUntilToken) {
+    if (!isPaused && revealedTokenIndex < revealUntilToken-1) {
       const delay = 60000 / wpm;
       timerRef.current = window.setTimeout(() => {
         setRevealedTokenIndex(prev => prev + 1);
@@ -106,20 +112,64 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     };
   }, [isPaused, revealedTokenIndex, wpm, plan, timelineIndex, revealUntilToken]);
 
+  useEffect(() => {
+    if (revealedTokenRef.current) {
+      revealedTokenRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [revealedTokenIndex]);
+
 
   const startTokenOfPause = currentTimelineItem?.pause_require[0]?.span[0] ?? 0;
   const endTokenOfPause = currentTimelineItem?.pause_require[0]?.span[1] ?? 0;
   const correctAnswer = tokens.slice(startTokenOfPause, endTokenOfPause + 1).join('');
 
+  const turnSentences = useMemo(() => {
+    if (!isPaused || !currentTimelineItem || currentTimelineItem.pause_require.length === 0) return [];
+    const pauseInfo = currentTimelineItem.pause_require[0];
+    const turnTokens = tokens.slice(pauseInfo.span[0], pauseInfo.span[1] + 1);
+    return parseSentences(turnTokens).map(s => s.text);
+  }, [isPaused, currentTimelineItem, tokens]);
+
   const handleHint = () => {
-    if (hint.length < correctAnswer.length) {
-      setHint(correctAnswer.substring(0, hint.length + 1));
+    const isMultiSentenceTurn = turnSentences.length > 1;
+    const answerForHint = isMultiSentenceTurn ? turnSentences[currentUserSentenceIndex] : correctAnswer;
+
+    const words = answerForHint.trim().split(/\s+/).filter(w => w.length > 0);
+    if (hintWords < words.length) {
+      const newHint = words.slice(0, hintWords + 1).join(' ');
+      setHint(newHint);
+      setHintWords(hintWords + 1);
     }
   };
 
+  const handleShowAnswer = () => {
+    if (!currentTimelineItem || currentTimelineItem.pause_require.length === 0) return;
+
+    const endOfTypedPhrase = currentTimelineItem.pause_require[0].span[1];
+    setRevealedTokenIndex(endOfTypedPhrase);
+
+    const nextIndex = timelineIndex + 1;
+    setTimelineIndex(nextIndex);
+
+    const nextTimelineItem = plan?.timeline[nextIndex];
+    if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
+      setIsPaused(true);
+    } else {
+      setIsPaused(false);
+    }
+
+    // Reset input fields
+    setUserInput('');
+    setFeedback(null);
+    setHint('');
+    setHintWords(0);
+    setIncorrectFeedback(null);
+  };
+
   const generateDiff = (userInput: string, correctAnswer: string) => {
-    const userChars = userInput.trim().split('');
-    const correctChars = correctAnswer.trim().split('');
+    const cleanCorrectAnswer = correctAnswer.trim().replace(/[.,\s]+$/, "");
+    const userChars = userInput.trim().replace(/[.,\s]+$/, "").split('');
+    const correctChars = cleanCorrectAnswer.split('');
     
     return (
       <p className="font-mono bg-gray-800 p-2 rounded mt-2 text-left whitespace-pre-wrap break-words">
@@ -138,50 +188,65 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     e.preventDefault();
     if (!currentTimelineItem || currentTimelineItem.pause_require.length === 0) return;
 
-    const trimmedUserInput = userInput.trim();
-    const trimmedCorrectAnswer = correctAnswer.trim();
+    const isMultiSentenceTurn = turnSentences.length > 1;
+    const trimmedUserInput = userInput.trim().replace(/[.,\s]+$/, '');
+    
+    const answerForThisSubmission = (
+      isMultiSentenceTurn
+        ? turnSentences[currentUserSentenceIndex]
+        : correctAnswer
+    ).trim().replace(/[.,\s]+$/, '');
 
-    if (trimmedUserInput.toLowerCase() === trimmedCorrectAnswer.toLowerCase()) {
+    if (trimmedUserInput.toLowerCase() === answerForThisSubmission.toLowerCase()) {
       setFeedback('correct');
       setIncorrectFeedback(null);
 
-      setTimeout(() => {
-        // Reveal the text the user just typed.
-        const endOfTypedPhrase = currentTimelineItem.pause_require[0].span[1];
-        setRevealedTokenIndex(endOfTypedPhrase);
+      const isLastSentenceOfTurn = currentUserSentenceIndex >= turnSentences.length - 1;
 
-        // Move to the next timeline item.
-        const nextIndex = timelineIndex + 1;
-        setTimelineIndex(nextIndex);
+      if (isMultiSentenceTurn && !isLastSentenceOfTurn) {
+        // More sentences to go in this turn
+        setTimeout(() => {
+          setCurrentUserSentenceIndex(prev => prev + 1);
+          setUserInput('');
+          setFeedback(null);
+          setHint('');
+          setHintWords(0);
+        }, 300);
+      } else {
+        // Turn finished (or was single sentence turn)
+        setTimeout(() => {
+          const endOfTypedPhrase = currentTimelineItem.pause_require[0].span[1];
+          setRevealedTokenIndex(endOfTypedPhrase);
 
-        // Check if the new timeline item requires a pause.
-        const nextTimelineItem = plan?.timeline[nextIndex];
-        if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
-          setIsPaused(true); // The next phase is another pause.
-        } else {
-          setIsPaused(false); // The next phase is auto-reveal.
-        }
-        
-        // Reset input fields for the next round.
-        setUserInput('');
-        setFeedback(null);
-        setHint('');
+          const nextIndex = timelineIndex + 1;
+          setTimelineIndex(nextIndex);
 
-      }, 300);
+          const nextTimelineItem = plan?.timeline[nextIndex];
+          if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
+            setIsPaused(true);
+          } else {
+            setIsPaused(false);
+          }
+          
+          setUserInput('');
+          setFeedback(null);
+          setHint('');
+          setHintWords(0);
+        }, 300);
+      }
     } else {
       setFeedback('incorrect');
-      setIncorrectFeedback(generateDiff(trimmedUserInput, trimmedCorrectAnswer));
+      setIncorrectFeedback(generateDiff(trimmedUserInput, answerForThisSubmission));
     }
   };
   
   const isFinished = timelineIndex >= (plan?.timeline.length ?? 0);
 
   const handleModeChange = (type: CoPlayModeType) => {
-    setModeOption({ type, appSentences, userSentences });
+    setModeOption(prev => ({ ...prev, type }));
   };
 
   const handleStart = () => {
-    setModeOption({ type: modeOption.type, appSentences, userSentences });
     fetchPlan();
   };
 
@@ -192,7 +257,9 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setUserInput('');
     setFeedback(null);
     setHint('');
+    setHintWords(0);
     setIncorrectFeedback(null);
+    setCurrentUserSentenceIndex(0);
 
     const startsWithPause = plan.timeline.length > 0 && plan.timeline[0].pause_require.length > 0;
     setIsPaused(startsWithPause);
@@ -223,11 +290,11 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
             <div className="flex items-center space-x-4">
               <div>
                 <label htmlFor="app-sentences" className="block text-gray-300 mb-1">App Sentences:</label>
-                <input id="app-sentences" type="number" min="1" value={appSentences} onChange={e => setAppSentences(parseInt(e.target.value, 10))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
+                <input id="app-sentences" type="number" min="1" value={modeOption.appSentences} onChange={e => setModeOption(prev => ({ ...prev, appSentences: parseInt(e.target.value, 10) || 1 }))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
               </div>
               <div>
                 <label htmlFor="user-sentences" className="block text-gray-300 mb-1">User Sentences:</label>
-                <input id="user-sentences" type="number" min="1" value={userSentences} onChange={e => setUserSentences(parseInt(e.target.value, 10))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
+                <input id="user-sentences" type="number" min="1" value={modeOption.userSentences} onChange={e => setModeOption(prev => ({ ...prev, userSentences: parseInt(e.target.value, 10) || 1 }))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
               </div>
             </div>
           )}
@@ -244,33 +311,40 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   if (!plan || plan.timeline.length === 0) return <div className="p-8 text-center text-gray-400">Could not create a Co-Play plan for this text.</div>;
 
   const sentencesToType = currentTimelineItem?.pause_require[0]?.user_sentences_to_type;
+  const isMultiSentenceTurn = turnSentences.length > 1;
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
       <h2 className="text-2xl font-bold text-teal-400 mb-6">Co-Play Mode</h2>
       
-      <div className="flex-grow bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 mb-6">
+      <div className="max-h-64 overflow-y-auto bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 mb-6">
         <p className="text-xl leading-loose whitespace-pre-wrap">
-          {tokens.map((token, index) => (
-            <span
-              key={index}
-              className={`transition-colors duration-200 ${
-                index <= revealedTokenIndex ? 'text-teal-300' : 'text-transparent'
-              } ${
-                index === revealedTokenIndex ? 'bg-teal-500/20 rounded' : ''
-              }`}
-            >
-              {token}
-            </span>
-          ))}
-           {isPaused && !isFinished && currentTimelineItem?.pause_require.length > 0 && (
-            tokens.slice(startTokenOfPause, endTokenOfPause + 1).map((token, i) => {
-                if (token.trim() === '') {
-                    return <span key={`placeholder-${i}`}>{token}</span>;
-                }
-                return <span key={`placeholder-${i}`} className="bg-gray-700 text-transparent rounded-sm select-none">{token}</span>;
-            })
-           )}
+          {tokens.map((token, index) => {
+            const isRevealed = index <= revealedTokenIndex;
+            const isCurrentlyRevealing = index === revealedTokenIndex;
+            const isPartOfPausePlaceholder = isPaused && !isFinished && currentTimelineItem?.pause_require.length > 0 && index >= startTokenOfPause && index <= endTokenOfPause;
+
+            if (isPartOfPausePlaceholder) {
+              if (token.trim() === '') {
+                return <span key={index}>{token}</span>;
+              }
+              return <span key={index} className="bg-gray-700 text-transparent rounded-sm select-none">{token}</span>;
+            }
+
+            return (
+              <span
+                key={index}
+                ref={isCurrentlyRevealing ? revealedTokenRef : null}
+                className={`transition-colors duration-200 ${
+                  isRevealed ? 'text-teal-300' : 'text-transparent'
+                } ${
+                  isCurrentlyRevealing ? 'bg-teal-500/20 rounded' : ''
+                }`}
+              >
+                {token}
+              </span>
+            );
+          })}
         </p>
       </div>
 
@@ -285,16 +359,25 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
         <>
-          <div className="flex justify-between items-center mb-4">
+          <div class="flex justify-between items-center mb-4">
             {sentencesToType && (
-              <div className="text-center p-2 bg-blue-900/30 rounded-lg">
-                <p className="text-blue-300">Please type the next {sentencesToType} sentence(s).</p>
+              <div class="text-center p-2 bg-blue-900/30 rounded-lg">
+                {isMultiSentenceTurn ? (
+                  <p class="text-blue-300">
+                    Please type sentence {currentUserSentenceIndex + 1} of {turnSentences.length}.
+                  </p>
+                ) : (
+                  <p class="text-blue-300">Please type the next sentence.</p>
+                )}
               </div>
             )}
-            <Button onClick={handleReset} variant="secondary" size="sm">Reset</Button>
+            <div class="flex gap-2">
+              <Button onClick={handleReset} variant="secondary" size="sm">Reset</Button>
+              <Button onClick={() => setPlan(null)} variant="secondary" size="sm">End Session</Button>
+            </div>
           </div>
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative flex-grow w-full sm:w-auto">
+          <form onSubmit={handleSubmit} class="flex flex-col sm:flex-row items-center gap-3">
+            <div class="relative flex-grow w-full sm:w-auto">
               <input
                 type="text"
                 value={userInput}
@@ -304,45 +387,46 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                   setIncorrectFeedback(null)
                 }}
                 placeholder="Type the next part..."
-                className={`w-full bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 pr-12 ${
-                  feedback === 'correct' ? 'border-green-500' :
+                class={`w-full bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 pr-12 ${
+                  feedback === 'correct' ? 'border-green-500' : 
                   feedback === 'incorrect' ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
                 }`}
                 autoFocus
               />
-              <Button 
-                onClick={handleHint} 
-                variant="ghost" 
-                size="icon" 
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-400"
+              <Button
+                type="button"
+                onClick={handleHint}
+                variant="ghost"
+                size="icon"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-400"
                 aria-label="Get a hint"
               >
-                <LightbulbIcon className="w-6 h-6" />
+                <LightbulbIcon class="w-6 h-6" />
               </Button>
             </div>
-            <Button type="submit" variant="primary" className="w-full sm:w-auto">
-              Continue
-            </Button>
+            <div class="flex gap-2">
+              <Button type="submit" variant="primary" class="flex-1 sm:flex-none">
+            Continue
+          </Button>
+          <Button onClick={handleShowAnswer} variant="secondary" class="flex-1 sm:flex-none">
+          Show Answer
+          </Button>
+          </div>
           </form>
-          {incorrectFeedback && (
-            <div className="mt-3 text-sm text-gray-400">
-              <p className="font-semibold mb-1 text-left">Suggestion:</p>
-              {incorrectFeedback}
-            </div>
-          )}
           {hint && (
-            <div className="mt-3 text-center text-sm text-gray-400">
-              Hint: <span className="font-mono bg-gray-700 p-1 rounded">{hint}</span>
+            <div class="mt-3 text-center text-sm text-gray-400">
+              Hint: <span class="font-mono bg-gray-700 p-1 rounded">{hint}</span>
             </div>
           )}
+          {incorrectFeedback}
         </>
       ) : (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-center text-gray-400">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-center text-gray-400">
                 <p>Revealing text...</p>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="wpm" className="text-sm font-medium text-gray-400">Speed (WPM):</label>
+            <div class="flex items-center gap-2">
+              <label htmlFor="wpm" class="text-sm font-medium text-gray-400">Speed (WPM):</label>
               <input
                 type="range"
                 id="wpm"
@@ -351,10 +435,11 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                 step="10"
                 value={wpm}
                 onChange={(e) => setWpm(Number(e.target.value))}
-                className="w-32 md:w-48"
+                class="w-32 md:w-48"
               />
-              <span className="font-mono text-teal-300 w-10 text-center">{wpm}</span>
+              <span class="font-mono text-teal-300 w-10 text-center">{wpm}</span>
             </div>
+            <Button onClick={() => setPlan(null)} variant="secondary" size="sm">End Session</Button>
         </div>
       )}
     </div>
