@@ -2,8 +2,8 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-import enTranslations from './public/locales/en/translation.json';
-import viTranslations from './public/locales/vi/translation.json';
+import enTranslations from './src/locales/en/translation.json';
+import viTranslations from './src/locales/vi/translation.json';
 
 const fallbackTranslation = (key: string) => {
   const segments = key.split('.');
