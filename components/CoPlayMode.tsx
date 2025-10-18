@@ -29,6 +29,8 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [revealedTokenIndex, setRevealedTokenIndex] = useState(-1);
   const timerRef = useRef<number | null>(null);
   const revealedTokenRef = useRef<HTMLSpanElement | null>(null);
+  const lastAppSentencesRef = useRef<number>(typeof modeOption.appSentences === 'number' ? modeOption.appSentences : 1);
+  const lastUserSentencesRef = useRef<number>(typeof modeOption.userSentences === 'number' ? modeOption.userSentences : 1);
 
   const fetchPlan = useCallback(async () => {
     setLoading(true);
@@ -78,6 +80,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   }, [isPaused, timelineIndex]);
 
   const currentTimelineItem = plan?.timeline[timelineIndex];
+  const pauseInfo = currentTimelineItem?.pause_require[0];
   const revealUntilToken = currentTimelineItem?.reveal_until_token ?? (isPaused ? revealedTokenIndex : tokens.length);
 
   useEffect(() => {
@@ -119,20 +122,31 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   }, [revealedTokenIndex]);
 
 
-  const startTokenOfPause = currentTimelineItem?.pause_require[0]?.span[0] ?? 0;
-  const endTokenOfPause = currentTimelineItem?.pause_require[0]?.span[1] ?? 0;
-  const correctAnswer = tokens.slice(startTokenOfPause, endTokenOfPause + 1).join('');
+  const startTokenOfPause = pauseInfo?.span[0] ?? 0;
+  const endTokenOfPause = pauseInfo?.span[1] ?? 0;
 
-  const turnSentences = useMemo(() => {
-    if (!isPaused || !currentTimelineItem || currentTimelineItem.pause_require.length === 0) return [];
-    const pauseInfo = currentTimelineItem.pause_require[0];
-    const turnTokens = tokens.slice(pauseInfo.span[0], pauseInfo.span[1] + 1);
-    return parseSentences(turnTokens).map(s => s.text);
-  }, [isPaused, currentTimelineItem, tokens]);
+  const turnTokens = useMemo(() => {
+    if (!pauseInfo) return [];
+    return tokens.slice(pauseInfo.span[0], pauseInfo.span[1] + 1);
+  }, [pauseInfo, tokens]);
+
+  const correctAnswer = useMemo(() => turnTokens.join(''), [turnTokens]);
+
+  const turnSentenceData = useMemo(() => parseSentences(turnTokens), [turnTokens]);
+
+  const turnSentences = useMemo(() => turnSentenceData.map(s => s.text), [turnSentenceData]);
+
+  const getTurnSentenceGlobalEnd = useCallback((sentenceIndex: number) => {
+    if (!pauseInfo) return null;
+    const sentence = turnSentenceData[sentenceIndex];
+    if (!sentence) return null;
+    return pauseInfo.span[0] + sentence.tokenEnd;
+  }, [pauseInfo, turnSentenceData]);
 
   const handleHint = () => {
     const isMultiSentenceTurn = turnSentences.length > 1;
-    const answerForHint = isMultiSentenceTurn ? turnSentences[currentUserSentenceIndex] : correctAnswer;
+    const sentenceForHint = turnSentenceData[currentUserSentenceIndex]?.text ?? '';
+    const answerForHint = isMultiSentenceTurn ? sentenceForHint : correctAnswer;
 
     const words = answerForHint.trim().split(/\s+/).filter(w => w.length > 0);
     if (hintWords < words.length) {
@@ -193,13 +207,18 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     
     const answerForThisSubmission = (
       isMultiSentenceTurn
-        ? turnSentences[currentUserSentenceIndex]
+        ? (turnSentenceData[currentUserSentenceIndex]?.text ?? '')
         : correctAnswer
     ).trim().replace(/[.,\s]+$/, '');
 
     if (trimmedUserInput.toLowerCase() === answerForThisSubmission.toLowerCase()) {
       setFeedback('correct');
       setIncorrectFeedback(null);
+
+      const sentenceGlobalEnd = getTurnSentenceGlobalEnd(currentUserSentenceIndex);
+      if (sentenceGlobalEnd !== null) {
+        setRevealedTokenIndex(prev => Math.max(prev, sentenceGlobalEnd));
+      }
 
       const isLastSentenceOfTurn = currentUserSentenceIndex >= turnSentences.length - 1;
 
@@ -215,7 +234,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
       } else {
         // Turn finished (or was single sentence turn)
         setTimeout(() => {
-          const endOfTypedPhrase = currentTimelineItem.pause_require[0].span[1];
+          const endOfTypedPhrase = pauseInfo?.span[1] ?? revealedTokenIndex;
           setRevealedTokenIndex(endOfTypedPhrase);
 
           const nextIndex = timelineIndex + 1;
@@ -243,7 +262,54 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const isFinished = timelineIndex >= (plan?.timeline.length ?? 0);
 
   const handleModeChange = (type: CoPlayModeType) => {
-    setModeOption(prev => ({ ...prev, type }));
+    setModeOption(prev => {
+      if (type === CoPlayModeType.AppFirstRandom || type === CoPlayModeType.UserFirstRandom) {
+        const appSentences = typeof prev.appSentences === 'number' ? prev.appSentences : (lastAppSentencesRef.current || 1);
+        const userSentences = typeof prev.userSentences === 'number' ? prev.userSentences : (lastUserSentencesRef.current || 1);
+        return { ...prev, type, appSentences, userSentences };
+      }
+      return { ...prev, type };
+    });
+  };
+
+  const handleAppSentencesChange = (value: string) => {
+    const parsed = parseInt(value, 10);
+    const sanitized = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    lastAppSentencesRef.current = sanitized;
+    setModeOption(prev => ({ ...prev, appSentences: sanitized }));
+  };
+
+  const handleUserSentencesChange = (value: string) => {
+    const parsed = parseInt(value, 10);
+    const sanitized = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    lastUserSentencesRef.current = sanitized;
+    setModeOption(prev => ({ ...prev, userSentences: sanitized }));
+  };
+
+  const toggleAppSentencesAll = () => {
+    setModeOption(prev => {
+      if (prev.appSentences === 'all') {
+        const restored = lastAppSentencesRef.current || 1;
+        return { ...prev, appSentences: restored };
+      }
+      if (typeof prev.appSentences === 'number') {
+        lastAppSentencesRef.current = prev.appSentences;
+      }
+      return { ...prev, appSentences: 'all' };
+    });
+  };
+
+  const toggleUserSentencesAll = () => {
+    setModeOption(prev => {
+      if (prev.userSentences === 'all') {
+        const restored = lastUserSentencesRef.current || 1;
+        return { ...prev, userSentences: restored };
+      }
+      if (typeof prev.userSentences === 'number') {
+        lastUserSentencesRef.current = prev.userSentences;
+      }
+      return { ...prev, userSentences: 'all' };
+    });
   };
 
   const handleStart = () => {
@@ -287,14 +353,44 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
             </div>
           </div>
           {[CoPlayModeType.AppFirstN, CoPlayModeType.UserFirstN].includes(modeOption.type) && (
-            <div className="flex items-center space-x-4">
+            <div className="space-y-4">
               <div>
                 <label htmlFor="app-sentences" className="block text-gray-300 mb-1">App Sentences:</label>
-                <input id="app-sentences" type="number" min="1" value={modeOption.appSentences} onChange={e => setModeOption(prev => ({ ...prev, appSentences: parseInt(e.target.value, 10) || 1 }))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
+                <div className="flex items-center gap-3">
+                  <input
+                    id="app-sentences"
+                    type="number"
+                    min="1"
+                    value={modeOption.appSentences === 'all' ? '' : modeOption.appSentences}
+                    onChange={e => handleAppSentencesChange(e.target.value)}
+                    disabled={modeOption.appSentences === 'all'}
+                    placeholder={modeOption.appSentences === 'all' ? 'All sentences' : undefined}
+                    className="w-24 bg-gray-800 border border-gray-600 rounded p-2 disabled:opacity-70"
+                  />
+                  <label className="flex items-center gap-2 text-sm text-gray-400">
+                    <input type="checkbox" className="accent-teal-500" checked={modeOption.appSentences === 'all'} onChange={toggleAppSentencesAll} />
+                    All
+                  </label>
+                </div>
               </div>
               <div>
                 <label htmlFor="user-sentences" className="block text-gray-300 mb-1">User Sentences:</label>
-                <input id="user-sentences" type="number" min="1" value={modeOption.userSentences} onChange={e => setModeOption(prev => ({ ...prev, userSentences: parseInt(e.target.value, 10) || 1 }))} className="w-20 bg-gray-800 border border-gray-600 rounded p-2" />
+                <div className="flex items-center gap-3">
+                  <input
+                    id="user-sentences"
+                    type="number"
+                    min="1"
+                    value={modeOption.userSentences === 'all' ? '' : modeOption.userSentences}
+                    onChange={e => handleUserSentencesChange(e.target.value)}
+                    disabled={modeOption.userSentences === 'all'}
+                    placeholder={modeOption.userSentences === 'all' ? 'All sentences' : undefined}
+                    className="w-24 bg-gray-800 border border-gray-600 rounded p-2 disabled:opacity-70"
+                  />
+                  <label className="flex items-center gap-2 text-sm text-gray-400">
+                    <input type="checkbox" className="accent-teal-500" checked={modeOption.userSentences === 'all'} onChange={toggleUserSentencesAll} />
+                    All
+                  </label>
+                </div>
               </div>
             </div>
           )}
@@ -324,7 +420,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
             const isCurrentlyRevealing = index === revealedTokenIndex;
             const isPartOfPausePlaceholder = isPaused && !isFinished && currentTimelineItem?.pause_require.length > 0 && index >= startTokenOfPause && index <= endTokenOfPause;
 
-            if (isPartOfPausePlaceholder) {
+            if (isPartOfPausePlaceholder && index > revealedTokenIndex) {
               if (token.trim() === '') {
                 return <span key={index}>{token}</span>;
               }

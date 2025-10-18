@@ -206,12 +206,12 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
     const timeline = [];
 
     // Special case for short texts: reveal all, then pause for user to type all
-    if (sentences.length <= options.appSentences) {
+    if (options.appSentences === 'all' || sentences.length <= options.appSentences) {
         timeline.push({
             reveal_until_token: tokens.length,
             pause_require: [{
                 span: [0, tokens.length - 1],
-                user_sentences_to_type: sentences.length,
+                user_sentences_to_type: options.userSentences === 'all' ? sentences.length : options.userSentences,
             }],
         });
     } else {
@@ -222,7 +222,7 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
         while (currentSentenceIndex < sentences.length) {
             if (isAppTurn) {
                 // App reveals sentences
-                let sentencesToReveal = options.appSentences;
+                let sentencesToReveal = options.appSentences === 'all' ? sentences.length - currentSentenceIndex : options.appSentences;
                 if (options.type === CoPlayModeType.AppFirstRandom || options.type === CoPlayModeType.UserFirstRandom) {
                     sentencesToReveal = Math.floor(Math.random() * 3) + 1; // Random 1-3 sentences
                 }
@@ -239,7 +239,7 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
                 });
             } else {
                 // User types sentences
-                let sentencesToType = options.userSentences;
+                let sentencesToType = options.userSentences === 'all' ? sentences.length - currentSentenceIndex : options.userSentences;
                 if (options.type === CoPlayModeType.AppFirstRandom || options.type === CoPlayModeType.UserFirstRandom) {
                     sentencesToType = Math.floor(Math.random() * 3) + 1; // Random 1-3 sentences
                 }

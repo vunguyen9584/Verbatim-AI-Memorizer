@@ -90,8 +90,8 @@ export enum CoPlayModeType {
 
 export interface CoPlayModeOption {
   type: CoPlayModeType;
-  appSentences: number;
-  userSentences: number;
+  appSentences: number | 'all';
+  userSentences: number | 'all';
 }
 
 // --- MEMORY TIPS TYPES ---
