@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import i18n from 'i18next';
 import { QuizData, CoPlayPlan, CoPlayModeOption, CoPlayModeType, StoryElements, AcrosticKeywords, MemoryStoryResult, MemoryAcrosticResult, MemoryMethod } from '../types';
 import { logger } from '../utils/debugLogger';
 import { parseSentences } from '../utils/sentenceParser';
@@ -133,29 +134,12 @@ export const generateQuizzes = async (
     const model = 'gemini-2.5-flash';
     const tokenList = tokens.map((token, index) => `[${index}]: ${JSON.stringify(token)}`).join('\\n');
 
-    const prompt = `Based on the following text and its tokenization, generate a series of quiz questions to help a user memorize it.
-
-    **CRITICAL INSTRUCTION: The 'stem' for each question MUST be in the same language as the provided text.**
-
-    The text is:
-    ---
-    ${text}
-    ---
-
-    The tokenization is (index: "token"):
-    ---
-    ${tokenList}
-    ---
-    
-    Generate exactly ${options.numQuestions} quiz questions. The quiz types must be chosen from the following list: [${options.quizTypes.join(', ')}].
-
-    Available types:
-    - 'cloze_by_token': Fill-in-the-blank style. Provide the base text with '...' masks and define the blanks with their answer text and token indices. Also, provide the sentence immediately before ('context_before') and after ('context_after') the sentence containing the blank, if they exist.
-    - 'mcq_cloze': A multiple-choice cloze question. Provide 'base_text_with_masks', an array of 'options', and CRITICALLY, 'answer_index' which is the zero-based index of the correct option within the 'options' array. Do NOT include a 'blanks' field for this type.
-    - 'ordering': Scramble a sequence of words from the text for the user to reorder. Provide the scrambled words and the token span of the correct answer.
-
-    Return the output in a JSON object matching the provided schema. Ensure all token indices are accurate based on the tokenization provided. For each quiz object, only include fields relevant to its 'type'.
-    `;
+    const prompt = i18n.t('gemini.quizPrompt', {
+        text,
+        tokenList,
+        numQuestions: options.numQuestions,
+        quizTypes: options.quizTypes.join(', '),
+    });
     
     logger.log('GEMINI_REQUEST', { type: 'generateQuizzes', prompt, options });
     
@@ -180,7 +164,7 @@ export const generateQuizzes = async (
             if (quiz.type === 'cloze_by_token') {
                 // Ensure fill-in-the-blank questions have surrounding context.
                 if (!quiz.context_before && !quiz.context_after) {
-                    const errorMsg = "The AI returned a Fill-in-the-Blank quiz with no context. Please try again.";
+                    const errorMsg = i18n.t('gemini.clozeContextError');
                     logger.log('GEMINI_VALIDATION_ERROR', { type: 'generateQuizzes', error: errorMsg, quiz });
                     throw new Error(errorMsg);
                 }
@@ -191,7 +175,7 @@ export const generateQuizzes = async (
     } catch (e) {
         logger.log('GEMINI_ERROR', { type: 'generateQuizzes', error: e });
         console.error("Error generating quizzes:", e);
-        throw new Error("Failed to generate quiz. The AI model may be temporarily unavailable.");
+        throw new Error(i18n.t('gemini.quizGenerationError'));
     }
 };
 
@@ -200,7 +184,7 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
     const sentences = parseSentences(tokens);
 
     if (sentences.length === 0) {
-        throw new Error("Could not parse any sentences from the text.");
+        throw new Error(i18n.t('gemini.sentenceParseError'));
     }
 
     const timeline = [];
@@ -285,41 +269,13 @@ export const generateMemoryTips = async (
     let synthesisPrompt = '';
 
     if (method === MemoryMethod.STORY) {
-        analysisPrompt = `Bạn là một chuyên gia phân tích văn bản để tạo câu chuyện gợi nhớ. Nhiệm vụ của bạn là đọc văn bản sau và rút ra những yếu tố hình ảnh cốt lõi, dễ hình dung nhất từ mỗi câu. Các yếu tố này nên là danh từ cụ thể, động từ hành động, hoặc hình ảnh sống động.
-
-Văn bản:
----
-${text}
----
-
-Trả về JSON với mảng "elements" chứa các yếu tố hình ảnh theo thứ tự của các câu.`;
-
+        analysisPrompt = i18n.t('gemini.storyAnalysisPrompt', { text });
         analysisSchema = storyElementsSchema;
-
-        synthesisPrompt = `Bạn là một người kể chuyện sáng tạo chuyên tạo ra các câu chuyện gợi nhớ. Dựa trên danh sách các yếu tố hình ảnh theo thứ tự dưới đây, hãy sáng tác một câu chuyện ngắn, phi lý, hài hước và thật sống động để liên kết tất cả chúng lại với nhau. Câu chuyện phải dễ hình dung để giúp người dùng ghi nhớ thứ tự của các yếu tố.
-
-Các yếu tố hình ảnh:
-{{json_elements}}
-
-Câu chuyện gợi nhớ của bạn:`;
-
+        synthesisPrompt = i18n.t('gemini.storySynthesisPrompt');
     } else if (method === MemoryMethod.ACROSTIC) {
-        analysisPrompt = `Bạn là một chuyên gia phân tích văn bản để tạo câu viết tắt gợi nhớ. Nhiệm vụ của bạn là đọc văn bản sau và rút ra những từ khóa quan trọng nhất từ mỗi câu, những từ đại diện cho ý chính của câu đó.
-
-Văn bản:
----
-${text}
----
-
-Trả về JSON với mảng "keywords" chứa các từ khóa theo thứ tự của các câu.`;
-
+        analysisPrompt = i18n.t('gemini.acrosticAnalysisPrompt', { text });
         analysisSchema = acrosticKeywordsSchema;
-
-        synthesisPrompt = `Bạn là một chuyên gia tạo câu gợi nhớ (acrostic). Dựa vào chuỗi ký tự đầu vào, hãy tạo ra một câu văn hoàn chỉnh, dễ nhớ, và đúng ngữ pháp, trong đó từ đầu tiên bắt đầu bằng ký tự thứ nhất, từ thứ hai bắt đầu bằng ký tự thứ hai, và cứ thế tiếp tục.
-
-Chuỗi ký tự: {{initial_letters}}
-
-Câu gợi nhớ của bạn:`;
+        synthesisPrompt = i18n.t('gemini.acrosticSynthesisPrompt');
     }
 
     try {
@@ -369,6 +325,6 @@ Câu gợi nhớ của bạn:`;
     } catch (e) {
         logger.log('GEMINI_ERROR', { type: 'generateMemoryTips', error: e, method });
         console.error("Error generating memory tips:", e);
-        throw new Error("Failed to generate memory tips. The AI model may be temporarily unavailable.");
+        throw new Error(i18n.t('gemini.memoryTipsGenerationError'));
     }
 };

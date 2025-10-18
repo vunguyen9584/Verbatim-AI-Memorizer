@@ -8,6 +8,9 @@
 ## Architecture
 React 19 + TypeScript + Vite app with Gemini AI integration. Four learning modes: Quiz, Play, Co-Play, Memory Tips. Components in `/components`, services in `/services`, utils in `/utils`.
 
+## Internationalization
+- Use `i18n` for a multilingual setup.
+
 ## Code Style
 - **Components**: Functional React with hooks, PascalCase naming
 - **Types**: Strict TypeScript, interfaces in `types.ts`, enums for constants
