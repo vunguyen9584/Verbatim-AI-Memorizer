@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { QuizData, ClozeQuizItem, MCQQuizItem, OrderingQuizItem } from '../types';
 import { generateQuizzes } from '../services/geminiService';
 import Loader from './common/Loader';
@@ -20,6 +21,7 @@ const ALL_QUIZ_TYPES = [
 ];
 
 const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
+  const { t } = useTranslation();
   const [quizState, setQuizState] = useState<QuizState>('setup');
 
   // Setup state
@@ -100,7 +102,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
   const handleGenerateQuiz = useCallback(async () => {
     if (selectedQuizTypes.length === 0) {
-        setError("Please select at least one quiz type.");
+        setError(t('quiz.selectQuizType'));
         return;
     }
     setError(null);
@@ -113,7 +115,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
       // Basic validation for AI response
       if (!data || !Array.isArray(data.quizzes) || data.quizzes.length === 0) {
-        setError("The AI returned an empty or invalid response. Please try again.");
+        setError(t('quiz.emptyResponseError'));
         setQuizState('setup');
         return;
       }
@@ -121,7 +123,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
       // More specific validation for quiz item integrity.
       for (const quiz of data.quizzes) {
         if (!quiz || !quiz.type || !quiz.stem) {
-             setError("The AI returned a quiz with invalid data. Please try again.");
+             setError(t('quiz.invalidDataError'));
              setQuizState('setup');
              return;
         }
@@ -132,7 +134,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
           const canDerive = (mcq as any).blanks?.[0]?.answer_text && Array.isArray(mcq.options);
           
           if (!hasIndex && !canDerive) {
-            setError("The AI returned an MCQ quiz with no answer. Please try again.");
+            setError(t('quiz.noAnswerError'));
             setQuizState('setup');
             console.warn("Invalid MCQ item from AI:", mcq);
             return;
@@ -143,11 +145,11 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
       setQuizData(data);
       setQuizState('active');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred while generating the quiz.');
+      setError(err instanceof Error ? err.message : t('quiz.generationError'));
       console.error(err);
       setQuizState('setup');
     }
-  }, [text, tokens, selectedQuizTypes, numQuestions]);
+  }, [text, tokens, selectedQuizTypes, numQuestions, t]);
 
   const handleEndQuiz = () => {
       resetQuizState();
@@ -218,7 +220,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                     <input
                         ref={el => inputRefs.current[0] = el}
                         type="text"
-                        placeholder="Type the missing line..."
+                        placeholder={t('quiz.typeMissingLine')}
                         className="bg-gray-700 border-2 border-gray-600 rounded-md p-2 mx-1 text-teal-300 w-full md:w-3/4 focus:border-teal-500 focus:outline-none"
                         value={userAnswer?.[0] || ''}
                         disabled={isAnswered}
@@ -242,7 +244,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                      <input
                         ref={el => inputRefs.current[0] = el}
                         type="text"
-                        placeholder="Type the missing line..."
+                        placeholder={t('quiz.typeMissingLine')}
                         className="bg-gray-700 border-2 border-gray-600 rounded-md p-2 mx-1 text-teal-300 w-full md:w-3/4 focus:border-teal-500 focus:outline-none"
                         value={userAnswer?.[0] || ''}
                         disabled={isAnswered}
@@ -322,7 +324,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
             </div>
         );
       default:
-        return <div>Unsupported quiz type</div>;
+        return <div>{t('quiz.unsupportedQuizType')}</div>;
     }
   };
 
@@ -332,10 +334,10 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
       <div className={`mt-4 p-4 rounded-lg flex items-center justify-between gap-3 ${isCorrect ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
         <div className="flex items-center gap-3">
             {isCorrect ? <CheckCircleIcon className="w-6 h-6" /> : <XCircleIcon className="w-6 h-6" />}
-            <span className="font-semibold">{isCorrect ? 'Correct!' : 'Not quite.'}</span>
+            <span className="font-semibold">{isCorrect ? t('quiz.correct') : t('quiz.notQuite')}</span>
         </div>
         {!isCorrect && !showAnswer && (
-            <Button variant="ghost" onClick={() => setShowAnswer(true)}>Show Answer</Button>
+            <Button variant="ghost" onClick={() => setShowAnswer(true)}>{t('quiz.showAnswer')}</Button>
         )}
       </div>
     );
@@ -360,15 +362,15 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
             const mcqQuiz = currentQuiz as MCQQuizItem;
             if (typeof correctAnswerIndex === 'number') {
                 const answerText = mcqQuiz.options?.[correctAnswerIndex]?.text;
-                return answerText ?? "Answer not available";
+                return answerText ?? t('quiz.answerNotAvailable');
             }
-            return "Answer not available";
+            return t('quiz.answerNotAvailable');
         }
         case 'ordering':
              const orderingQuiz = currentQuiz as OrderingQuizItem;
              return tokens.slice(orderingQuiz.answer_span[0], orderingQuiz.answer_span[1] + 1).join('');
         default:
-            return "Answer not available";
+            return t('quiz.answerNotAvailable');
     }
   }
 
@@ -379,7 +381,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
     return (
         <div className="mt-4 p-4 rounded-lg bg-gray-700/50 text-gray-300">
-            <p className="font-semibold text-teal-400">Correct Answer:</p>
+            <p className="font-semibold text-teal-400">{t('quiz.correctAnswer')}</p>
             <p className="mt-1 text-lg whitespace-pre-wrap">{answerText}</p>
         </div>
     )
@@ -387,14 +389,14 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
   const renderSetup = () => (
     <div className="p-4 md:p-8 flex flex-col h-full justify-center">
-        <h2 className="text-2xl font-bold text-teal-400 mb-2 text-center">Quiz Setup</h2>
-        <p className="text-gray-400 mb-6 text-center">Configure your practice session.</p>
+        <h2 className="text-2xl font-bold text-teal-400 mb-2 text-center">{t('quiz.setupTitle')}</h2>
+        <p className="text-gray-400 mb-6 text-center">{t('quiz.setupPrompt')}</p>
 
         {error && <div className="bg-red-900/50 text-red-300 p-3 rounded-lg mb-4 text-center">{error}</div>}
 
         <div className="space-y-6">
             <div>
-                <label className="block text-lg font-semibold text-gray-200 mb-3">Quiz Types</label>
+                <label className="block text-lg font-semibold text-gray-200 mb-3">{t('quiz.quizTypes')}</label>
                 <div className="grid grid-cols-2 gap-3">
                     {ALL_QUIZ_TYPES.map(type => (
                         <button
@@ -406,13 +408,13 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                                 : 'bg-gray-700/50 border-gray-600 hover:bg-gray-700'
                             }`}
                         >
-                            {type.name}
+                            {t(`quiz.${type.id}`)}
                         </button>
                     ))}
                 </div>
             </div>
             <div>
-                <label htmlFor="numQuestions" className="block text-lg font-semibold text-gray-200 mb-2">Number of Questions: <span className="font-bold text-teal-300">{numQuestions}</span></label>
+                <label htmlFor="numQuestions" className="block text-lg font-semibold text-gray-200 mb-2" dangerouslySetInnerHTML={{ __html: t('quiz.numQuestions', { count: numQuestions }) }} />
                 <input
                     type="range"
                     id="numQuestions"
@@ -426,7 +428,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
             {selectedQuizTypes.includes('cloze_by_token') && (
                 <div>
-                    <label className="block text-lg font-semibold text-gray-200 mb-3">Fill-in-the-Blank Difficulty</label>
+                    <label className="block text-lg font-semibold text-gray-200 mb-3">{t('quiz.clozeDifficulty')}</label>
                     <div className="grid grid-cols-3 gap-3">
                         {(['Easy', 'Medium', 'Hard'] as const).map(level => (
                             <button
@@ -438,7 +440,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                                     : 'bg-gray-700/50 border-gray-600 hover:bg-gray-700'
                                 }`}
                             >
-                                {level}
+                                {t(`quiz.${level.toLowerCase()}`)}
                             </button>
                         ))}
                     </div>
@@ -448,7 +450,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
         <div className="mt-8">
             <Button onClick={handleGenerateQuiz} variant="primary" className="w-full" disabled={selectedQuizTypes.length === 0}>
-                Generate Quiz
+                {t('quiz.generate')}
             </Button>
         </div>
     </div>
@@ -458,8 +460,8 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     if (!quizData || !currentQuiz) {
         return (
             <div className="p-8 text-center text-gray-400">
-                Something went wrong.
-                <Button onClick={handleEndQuiz} className="mt-4">Start Over</Button>
+                {t('quiz.somethingWentWrong')}
+                <Button onClick={handleEndQuiz} className="mt-4">{t('quiz.startOver')}</Button>
             </div>
         );
     }
@@ -468,12 +470,12 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         <div className="p-4 md:p-8 flex flex-col h-full">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <p className="text-sm text-gray-400">Question {currentQuizIndex + 1} of {quizData.quizzes.length}</p>
+              <p className="text-sm text-gray-400">{t('quiz.questionProgress', { current: currentQuizIndex + 1, total: quizData.quizzes.length })}</p>
               <h2 className="text-xl font-bold text-teal-400">
                 {currentQuiz.stem}
               </h2>
             </div>
-            <Button onClick={handleEndQuiz} variant="ghost" className="flex-shrink-0">End Quiz</Button>
+            <Button onClick={handleEndQuiz} variant="ghost" className="flex-shrink-0">{t('quiz.endQuiz')}</Button>
           </div>
     
           <div className="flex-grow mb-4 text-lg text-gray-200">
@@ -485,10 +487,10 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     
           <div className="mt-auto pt-6 border-t border-gray-700/50 flex justify-end gap-3">
             {!isAnswered ? (
-              <Button onClick={handleCheckAnswer} variant="primary" disabled={userAnswer === null || (Array.isArray(userAnswer) && userAnswer.length === 0)}>Check Answer</Button>
+              <Button onClick={handleCheckAnswer} variant="primary" disabled={userAnswer === null || (Array.isArray(userAnswer) && userAnswer.length === 0)}>{t('quiz.checkAnswer')}</Button>
             ) : (
               <Button onClick={handleNext} variant="primary" ref={nextButtonRef}>
-                {currentQuizIndex < quizData.quizzes.length - 1 ? 'Next Question' : 'Finish Quiz'}
+                {currentQuizIndex < quizData.quizzes.length - 1 ? t('quiz.nextQuestion') : t('quiz.finishQuiz')}
               </Button>
             )}
           </div>
@@ -500,9 +502,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     if (!quizData) return null;
     return (
         <div className="p-8 text-center flex flex-col justify-center items-center h-full">
-            <h2 className="text-3xl font-bold text-teal-400 mb-4">Quiz Complete!</h2>
-            <p className="text-xl text-gray-300 mb-6">You got <span className="font-bold text-white">{correctAnswersCount}</span> out of <span className="font-bold text-white">{quizData.quizzes.length}</span> correct on the first try.</p>
-            <Button onClick={handleEndQuiz} variant="primary">Create Another Quiz</Button>
+            <h2 className="text-3xl font-bold text-teal-400 mb-4">{t('quiz.completeTitle')}</h2>
+            <p className="text-xl text-gray-300 mb-6" dangerouslySetInnerHTML={{ __html: t('quiz.results', { correct: correctAnswersCount, total: quizData.quizzes.length }) }} />
+            <Button onClick={handleEndQuiz} variant="primary">{t('quiz.createAnother')}</Button>
         </div>
     );
   };
@@ -511,7 +513,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
       case 'setup':
           return renderSetup();
       case 'loading':
-          return <Loader text="Generating your quiz..." />;
+          return <Loader text={t('quiz.generating')} />;
       case 'active':
           return renderActiveQuiz();
       case 'results':

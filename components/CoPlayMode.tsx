@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CoPlayPlan, CoPlayModeType, CoPlayModeOption } from '../types';
 import { planCoPlay } from '../services/geminiService';
 import Loader from './common/Loader';
@@ -12,6 +13,7 @@ interface CoPlayModeProps {
 }
 
 const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
+  const { t } = useTranslation();
   const [modeOption, setModeOption] = useState<CoPlayModeOption>({ type: CoPlayModeType.AppFirstN, appSentences: 1, userSentences: 1 });
   const [plan, setPlan] = useState<CoPlayPlan | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
       const data = await planCoPlay(text, tokens, modeOption);
 
       if (!data || !data.timeline) {
-        throw new Error("Failed to generate a valid Co-Play plan.");
+        throw new Error(t('coPlay.invalidPlanError'));
       }
 
       if (data.timeline.length > 0) {
@@ -67,11 +69,11 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         setRevealedTokenIndex(firstPauseStartToken - 1);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate a Co-Play plan. Please try again.');
+      setError(err instanceof Error ? err.message : t('coPlay.planGenerationError'));
     } finally {
       setLoading(false);
     }
-  }, [text, tokens, modeOption]);
+  }, [text, tokens, modeOption, t]);
 
   useEffect(() => {
     if (isPaused && currentTimelineItem?.pause_require.length > 0) {
@@ -341,21 +343,21 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   if (!plan) {
     return (
       <div className="p-4 md:p-8 flex flex-col h-full">
-        <h2 className="text-2xl font-bold text-teal-400 mb-6">Co-Play Mode Setup</h2>
+        <h2 className="text-2xl font-bold text-teal-400 mb-6">{t('coPlay.setupTitle')}</h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-gray-300 mb-2">Select Mode:</label>
+            <label className="block text-gray-300 mb-2">{t('coPlay.selectMode')}</label>
             <div className="grid grid-cols-2 gap-2">
-              <Button onClick={() => handleModeChange(CoPlayModeType.AppFirstN)} variant={modeOption.type === CoPlayModeType.AppFirstN ? 'primary' : 'secondary'}>App First</Button>
-              <Button onClick={() => handleModeChange(CoPlayModeType.UserFirstN)} variant={modeOption.type === CoPlayModeType.UserFirstN ? 'primary' : 'secondary'}>User First</Button>
-              <Button onClick={() => handleModeChange(CoPlayModeType.AppFirstRandom)} variant={modeOption.type === CoPlayModeType.AppFirstRandom ? 'primary' : 'secondary'}>App First (Random)</Button>
-              <Button onClick={() => handleModeChange(CoPlayModeType.UserFirstRandom)} variant={modeOption.type === CoPlayModeType.UserFirstRandom ? 'primary' : 'secondary'}>User First (Random)</Button>
+              <Button onClick={() => handleModeChange(CoPlayModeType.AppFirstN)} variant={modeOption.type === CoPlayModeType.AppFirstN ? 'primary' : 'secondary'}>{t('coPlay.appFirst')}</Button>
+              <Button onClick={() => handleModeChange(CoPlayModeType.UserFirstN)} variant={modeOption.type === CoPlayModeType.UserFirstN ? 'primary' : 'secondary'}>{t('coPlay.userFirst')}</Button>
+              <Button onClick={() => handleModeChange(CoPlayModeType.AppFirstRandom)} variant={modeOption.type === CoPlayModeType.AppFirstRandom ? 'primary' : 'secondary'}>{t('coPlay.appFirstRandom')}</Button>
+              <Button onClick={() => handleModeChange(CoPlayModeType.UserFirstRandom)} variant={modeOption.type === CoPlayModeType.UserFirstRandom ? 'primary' : 'secondary'}>{t('coPlay.userFirstRandom')}</Button>
             </div>
           </div>
           {[CoPlayModeType.AppFirstN, CoPlayModeType.UserFirstN].includes(modeOption.type) && (
             <div className="space-y-4">
               <div>
-                <label htmlFor="app-sentences" className="block text-gray-300 mb-1">App Sentences:</label>
+                <label htmlFor="app-sentences" className="block text-gray-300 mb-1">{t('coPlay.appSentences')}</label>
                 <div className="flex items-center gap-3">
                   <input
                     id="app-sentences"
@@ -364,17 +366,17 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                     value={modeOption.appSentences === 'all' ? '' : modeOption.appSentences}
                     onChange={e => handleAppSentencesChange(e.target.value)}
                     disabled={modeOption.appSentences === 'all'}
-                    placeholder={modeOption.appSentences === 'all' ? 'All sentences' : undefined}
+                    placeholder={modeOption.appSentences === 'all' ? t('coPlay.allSentences') : undefined}
                     className="w-24 bg-gray-800 border border-gray-600 rounded p-2 disabled:opacity-70"
                   />
                   <label className="flex items-center gap-2 text-sm text-gray-400">
                     <input type="checkbox" className="accent-teal-500" checked={modeOption.appSentences === 'all'} onChange={toggleAppSentencesAll} />
-                    All
+                    {t('coPlay.all')}
                   </label>
                 </div>
               </div>
               <div>
-                <label htmlFor="user-sentences" className="block text-gray-300 mb-1">User Sentences:</label>
+                <label htmlFor="user-sentences" className="block text-gray-300 mb-1">{t('coPlay.userSentences')}</label>
                 <div className="flex items-center gap-3">
                   <input
                     id="user-sentences"
@@ -383,35 +385,35 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                     value={modeOption.userSentences === 'all' ? '' : modeOption.userSentences}
                     onChange={e => handleUserSentencesChange(e.target.value)}
                     disabled={modeOption.userSentences === 'all'}
-                    placeholder={modeOption.userSentences === 'all' ? 'All sentences' : undefined}
+                    placeholder={modeOption.userSentences === 'all' ? t('coPlay.allSentences') : undefined}
                     className="w-24 bg-gray-800 border border-gray-600 rounded p-2 disabled:opacity-70"
                   />
                   <label className="flex items-center gap-2 text-sm text-gray-400">
                     <input type="checkbox" className="accent-teal-500" checked={modeOption.userSentences === 'all'} onChange={toggleUserSentencesAll} />
-                    All
+                    {t('coPlay.all')}
                   </label>
                 </div>
               </div>
             </div>
           )}
-          <Button onClick={handleStart} variant="primary" size="lg">Start</Button>
+          <Button onClick={handleStart} variant="primary" size="lg">{t('coPlay.start')}</Button>
         </div>
-        {loading && <Loader text="Planning your session..." />}
+        {loading && <Loader text={t('coPlay.planningSession')} />}
         {error && <div className="p-4 mt-4 text-center text-red-400 bg-red-900/20 rounded">{error}</div>}
       </div>
     );
   }
 
-  if (loading) return <Loader text="Planning your session..." />;
-  if (error) return <div className="p-8 text-center text-red-400">{error} <Button onClick={fetchPlan} className="mt-4">Try Again</Button></div>;
-  if (!plan || plan.timeline.length === 0) return <div className="p-8 text-center text-gray-400">Could not create a Co-Play plan for this text.</div>;
+  if (loading) return <Loader text={t('coPlay.planningSession')} />;
+  if (error) return <div className="p-8 text-center text-red-400">{error} <Button onClick={fetchPlan} className="mt-4">{t('coPlay.tryAgain')}</Button></div>;
+  if (!plan || plan.timeline.length === 0) return <div className="p-8 text-center text-gray-400">{t('coPlay.planCreationError')}</div>;
 
   const sentencesToType = currentTimelineItem?.pause_require[0]?.user_sentences_to_type;
   const isMultiSentenceTurn = turnSentences.length > 1;
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
-      <h2 className="text-2xl font-bold text-teal-400 mb-6">Co-Play Mode</h2>
+      <h2 className="text-2xl font-bold text-teal-400 mb-6">{t('coPlay.modeTitle')}</h2>
       
       <div className="max-h-64 overflow-y-auto bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 mb-6">
         <p className="text-xl leading-loose whitespace-pre-wrap">
@@ -446,11 +448,11 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
 
       {isFinished ? (
           <div className="text-center p-4 bg-green-900/30 rounded-lg">
-              <h3 className="text-2xl font-bold text-green-300">Congratulations!</h3>
-              <p className="text-green-400">You've completed the session.</p>
+              <h3 className="text-2xl font-bold text-green-300">{t('coPlay.congratulations')}</h3>
+              <p className="text-green-400">{t('coPlay.sessionCompleted')}</p>
               <div className="flex justify-center gap-4 mt-4">
-                <Button onClick={handleReset} variant="secondary">Reset</Button>
-                <Button onClick={() => setPlan(null)} variant="primary">Play Again</Button>
+                <Button onClick={handleReset} variant="secondary">{t('coPlay.reset')}</Button>
+                <Button onClick={() => setPlan(null)} variant="primary">{t('coPlay.playAgain')}</Button>
               </div>
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
@@ -460,16 +462,16 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
               <div class="text-center p-2 bg-blue-900/30 rounded-lg">
                 {isMultiSentenceTurn ? (
                   <p class="text-blue-300">
-                    Please type sentence {currentUserSentenceIndex + 1} of {turnSentences.length}.
+                    {t('coPlay.typeSentence', { current: currentUserSentenceIndex + 1, total: turnSentences.length })}
                   </p>
                 ) : (
-                  <p class="text-blue-300">Please type the next sentence.</p>
+                  <p class="text-blue-300">{t('coPlay.typeNextSentence')}</p>
                 )}
               </div>
             )}
             <div class="flex gap-2">
-              <Button onClick={handleReset} variant="secondary" size="sm">Reset</Button>
-              <Button onClick={() => setPlan(null)} variant="secondary" size="sm">End Session</Button>
+              <Button onClick={handleReset} variant="secondary" size="sm">{t('coPlay.reset')}</Button>
+              <Button onClick={() => setPlan(null)} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
             </div>
           </div>
           <form onSubmit={handleSubmit} class="flex flex-col sm:flex-row items-center gap-3">
@@ -482,7 +484,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                   setFeedback(null)
                   setIncorrectFeedback(null)
                 }}
-                placeholder="Type the next part..."
+                placeholder={t('coPlay.typeNextPartPlaceholder')}
                 class={`w-full bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 pr-12 ${
                   feedback === 'correct' ? 'border-green-500' : 
                   feedback === 'incorrect' ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
@@ -495,23 +497,23 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                 variant="ghost"
                 size="icon"
                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-400"
-                aria-label="Get a hint"
+                aria-label={t('coPlay.getHint')}
               >
                 <LightbulbIcon class="w-6 h-6" />
               </Button>
             </div>
             <div class="flex gap-2">
               <Button type="submit" variant="primary" class="flex-1 sm:flex-none">
-            Continue
+            {t('coPlay.continue')}
           </Button>
           <Button onClick={handleShowAnswer} variant="secondary" class="flex-1 sm:flex-none">
-          Show Answer
+          {t('coPlay.showAnswer')}
           </Button>
           </div>
           </form>
           {hint && (
             <div class="mt-3 text-center text-sm text-gray-400">
-              Hint: <span class="font-mono bg-gray-700 p-1 rounded">{hint}</span>
+              {t('coPlay.hint')}<span class="font-mono bg-gray-700 p-1 rounded">{hint}</span>
             </div>
           )}
           {incorrectFeedback}
@@ -519,10 +521,10 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
       ) : (
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="text-center text-gray-400">
-                <p>Revealing text...</p>
+                <p>{t('coPlay.revealingText')}</p>
             </div>
             <div class="flex items-center gap-2">
-              <label htmlFor="wpm" class="text-sm font-medium text-gray-400">Speed (WPM):</label>
+              <label htmlFor="wpm" class="text-sm font-medium text-gray-400">{t('coPlay.speedWPM')}</label>
               <input
                 type="range"
                 id="wpm"
@@ -535,7 +537,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
               />
               <span class="font-mono text-teal-300 w-10 text-center">{wpm}</span>
             </div>
-            <Button onClick={() => setPlan(null)} variant="secondary" size="sm">End Session</Button>
+            <Button onClick={() => setPlan(null)} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from './common/Button';
 
 interface PlayModeProps {
@@ -7,6 +8,7 @@ interface PlayModeProps {
 }
 
 const PlayMode: React.FC<PlayModeProps> = ({ tokens }) => {
+  const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(false);
   const [wpm, setWpm] = useState(200);
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -87,7 +89,7 @@ const PlayMode: React.FC<PlayModeProps> = ({ tokens }) => {
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
-      <h2 className="text-2xl font-bold text-teal-400 mb-6">Play Mode</h2>
+      <h2 className="text-2xl font-bold text-teal-400 mb-6">{t('playMode.title')}</h2>
       
       <div
         ref={contentContainerRef}
@@ -114,14 +116,14 @@ const PlayMode: React.FC<PlayModeProps> = ({ tokens }) => {
       <div ref={controlsRef} className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
             <Button onClick={handlePlayPause} variant="primary" className="w-28">
-                {isPlaying ? 'Pause' : 'Play'}
+                {isPlaying ? t('playMode.pause') : t('playMode.play')}
             </Button>
             <Button onClick={handleReset} variant="secondary">
-                Reset
+                {t('playMode.reset')}
             </Button>
         </div>
         <div className="flex items-center gap-2">
-          <label htmlFor="wpm" className="text-sm font-medium text-gray-400">Speed (WPM):</label>
+          <label htmlFor="wpm" className="text-sm font-medium text-gray-400">{t('playMode.speedWPM')}</label>
           <input
             type="range"
             id="wpm"

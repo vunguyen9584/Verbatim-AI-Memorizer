@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { logger } from '../utils/debugLogger';
 import { XCircleIcon } from './common/Icon';
 import Button from './common/Button';
@@ -10,6 +11,7 @@ interface DebugPanelProps {
 }
 
 const DebugPanel: React.FC<DebugPanelProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState(logger.getLogs());
 
   useEffect(() => {
@@ -29,17 +31,17 @@ const DebugPanel: React.FC<DebugPanelProps> = ({ isOpen, onClose }) => {
   return (
     <div className="fixed bottom-4 right-4 w-[600px] max-w-[90vw] h-[400px] max-h-[60vh] bg-gray-900/80 backdrop-blur-md border border-teal-500/30 rounded-lg shadow-2xl z-50 flex flex-col animate-fade-in-up">
       <header className="flex items-center justify-between p-3 border-b border-gray-700 flex-shrink-0">
-        <h3 className="font-bold text-teal-400">AI Debug Panel</h3>
+        <h3 className="font-bold text-teal-400">{t('debugPanel.title')}</h3>
         <div className="flex items-center gap-2">
-            <Button onClick={handleClearLogs} variant="ghost" className="px-2 py-1 text-xs">Clear</Button>
-            <button onClick={onClose} className="text-gray-400 hover:text-white" aria-label="Close Debug Panel">
+            <Button onClick={handleClearLogs} variant="ghost" className="px-2 py-1 text-xs">{t('debugPanel.clear')}</Button>
+            <button onClick={onClose} className="text-gray-400 hover:text-white" aria-label={t('debugPanel.close')}>
                 <XCircleIcon className="w-6 h-6" />
             </button>
         </div>
       </header>
       <div className="flex-grow p-3 overflow-y-auto">
         {logs.length === 0 ? (
-          <p className="text-gray-500 text-center mt-4">No logs yet. Interact with the app to see AI calls.</p>
+          <p className="text-gray-500 text-center mt-4">{t('debugPanel.noLogs')}</p>
         ) : (
           <ul className="space-y-3 text-sm">
             {logs.slice().reverse().map((log, index) => (
