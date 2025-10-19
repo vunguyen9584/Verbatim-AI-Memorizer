@@ -62,10 +62,10 @@
     "title": "Learning Mode"
   },
   "learningModes": {
-    "QUIZ": "Quiz",
-    "PLAY": "Play",
-    "CO_PLAY": "Co-Play",
-    "MEMORY_TIPS": "Memory Tips"
+    "Quiz": "Quiz",
+    "Play": "Play",
+    "Co-Play": "Co-Play",
+    "Memory Tips": "Memory Tips"
   },
   "playMode": {
     "title": "Play Mode",

@@ -62,10 +62,10 @@
     "title": "Chế độ học"
   },
   "learningModes": {
-    "QUIZ": "Trắc nghiệm",
-    "PLAY": "Chơi",
-    "CO_PLAY": "Co-Play",
-    "MEMORY_TIPS": "Mẹo ghi nhớ"
+    "Quiz": "Trắc nghiệm",
+    "Play": "Chơi",
+    "Co-Play": "Co-Play",
+    "Memory Tips": "Mẹo ghi nhớ"
   },
   "playMode": {
     "title": "Chế độ chơi",
