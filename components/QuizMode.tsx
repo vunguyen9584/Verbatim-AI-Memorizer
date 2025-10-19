@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { QuizData, ClozeQuizItem, MCQQuizItem, OrderingQuizItem } from '../types';
 import { generateQuizzes } from '../services/geminiService';
 import Loader from './common/Loader';
@@ -414,7 +414,13 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                 </div>
             </div>
             <div>
-                <label htmlFor="numQuestions" className="block text-lg font-semibold text-gray-200 mb-2" dangerouslySetInnerHTML={{ __html: t('quiz.numQuestions', { count: numQuestions }) }} />
+                                <label htmlFor="numQuestions" className="block text-lg font-semibold text-gray-200 mb-2">
+                    <Trans
+                        i18nKey="quiz.numQuestions"
+                        values={{ count: numQuestions }}
+                        components={{ 1: <strong className="text-white" /> }}
+                    />
+                </label>
                 <input
                     type="range"
                     id="numQuestions"
@@ -503,7 +509,16 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     return (
         <div className="p-8 text-center flex flex-col justify-center items-center h-full">
             <h2 className="text-3xl font-bold text-teal-400 mb-4">{t('quiz.completeTitle')}</h2>
-            <p className="text-xl text-gray-300 mb-6" dangerouslySetInnerHTML={{ __html: t('quiz.results', { correct: correctAnswersCount, total: quizData.quizzes.length }) }} />
+                        <p className="text-xl text-gray-300 mb-6">
+                <Trans
+                    i18nKey="quiz.results"
+                    values={{ correct: correctAnswersCount, total: quizData.quizzes.length }}
+                    components={{
+                        1: <strong className="text-green-400" />,
+                        3: <strong />,
+                    }}
+                />
+            </p>
             <Button onClick={handleEndQuiz} variant="primary">{t('quiz.createAnother')}</Button>
         </div>
     );

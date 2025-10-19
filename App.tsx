@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { LearningMode } from './types';
 import TextInputArea from './components/TextInputArea';
 import ModeSelector from './components/ModeSelector';
@@ -64,7 +64,11 @@ const App: React.FC = () => {
       <header className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white" dangerouslySetInnerHTML={{ __html: t('headerTitle') }} />
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+            <Trans i18nKey="headerTitle">
+              Verbatim <span className="text-teal-400">AI</span> Memorizer
+            </Trans>
+          </h1>
         </div>
         <div className="flex items-center">
           <button onClick={() => changeLanguage('en')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>EN</button>
