@@ -14,7 +14,29 @@ interface CoPlayModeProps {
 
 const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const { t } = useTranslation();
-  const [modeOption, setModeOption] = useState<CoPlayModeOption>({ type: CoPlayModeType.AppFirstN, appSentences: 1, userSentences: 1 });
+  const totalSentences = useMemo(() => parseSentences(tokens).length, [tokens]);
+  const [modeOption, setModeOption] = useState<CoPlayModeOption>({
+    type: CoPlayModeType.AppFirstN,
+    appSentences: 1,
+    userSentences: 1,
+    startSentence: 1,
+    endSentence: totalSentences || 1
+  });
+
+  useEffect(() => {
+    if (totalSentences > 0) {
+      setModeOption(prev => {
+        const isInitialOrReset = prev.endSentence <= 1;
+        const newEndSentence = isInitialOrReset ? totalSentences : Math.min(prev.endSentence, totalSentences);
+        
+        return {
+          ...prev,
+          endSentence: newEndSentence,
+          startSentence: Math.min(prev.startSentence, newEndSentence)
+        };
+      });
+    }
+  }, [totalSentences]);
   const [plan, setPlan] = useState<CoPlayPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +48,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const [hintWords, setHintWords] = useState(0);
   const [incorrectFeedback, setIncorrectFeedback] = useState<React.ReactNode | null>(null);
   const [currentUserSentenceIndex, setCurrentUserSentenceIndex] = useState(0);
+  const [sessionCompleted, setSessionCompleted] = useState(false);
 
   const [wpm, setWpm] = useState(200);
   const [revealedTokenIndex, setRevealedTokenIndex] = useState(-1);
@@ -38,6 +61,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setLoading(true);
     setError(null);
     setPlan(null);
+    setSessionCompleted(false);
     setTimelineIndex(0);
     setUserInput('');
     setFeedback(null);
@@ -53,12 +77,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         throw new Error(t('coPlay.invalidPlanError'));
       }
 
-      if (data.timeline.length > 0) {
-        data.timeline.push({
-            reveal_until_token: tokens.length,
-            pause_require: [],
-        });
-      }
+      
       setPlan(data);
 
       const startsWithPause = data.timeline.length > 0 && data.timeline[0].pause_require.length > 0;
@@ -85,8 +104,40 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   const pauseInfo = currentTimelineItem?.pause_require[0];
   const revealUntilToken = currentTimelineItem?.reveal_until_token ?? (isPaused ? revealedTokenIndex : tokens.length);
 
-  useEffect(() => {
+  const finalTokenInPlanRange = useMemo(() => {
+    if (!plan) return -1;
+    let maxToken = -1;
+    for (const item of plan.timeline) {
+      if (typeof item.reveal_until_token === 'number') {
+        maxToken = Math.max(maxToken, item.reveal_until_token - 1);
+      }
+      for (const pause of item.pause_require) {
+        maxToken = Math.max(maxToken, pause.span[1]);
+      }
+    }
+    return maxToken;
+  }, [plan]);
+
+  const advanceTimeline = useCallback((targetIndex: number) => {
     if (!plan) return;
+
+    if (targetIndex >= plan.timeline.length) {
+      setTimelineIndex(plan.timeline.length);
+      setIsPaused(true);
+      setSessionCompleted(true);
+      if (finalTokenInPlanRange >= 0) {
+        setRevealedTokenIndex(prev => Math.max(prev, finalTokenInPlanRange));
+      }
+      return;
+    }
+
+    setTimelineIndex(targetIndex);
+    const nextTimelineItem = plan.timeline[targetIndex];
+    setIsPaused(Boolean(nextTimelineItem?.pause_require.length));
+  }, [plan, finalTokenInPlanRange]);
+
+  useEffect(() => {
+    if (!plan || sessionCompleted) return;
 
     if (!isPaused && revealedTokenIndex < revealUntilToken-1) {
       const delay = 60000 / wpm;
@@ -94,28 +145,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         setRevealedTokenIndex(prev => prev + 1);
       }, delay);
     } else if (!isPaused && revealedTokenIndex >= revealUntilToken - 1) {
-        // Finished revealing this segment, advance the timeline.
-        setTimelineIndex(prevIndex => {
-          const nextIndex = prevIndex + 1;
-          
-          if (nextIndex >= plan.timeline.length) {
-            setIsPaused(true);
-            return nextIndex; // Correctly advance to finish
-          }
-
-          const nextTimelineItem = plan.timeline[nextIndex];
-          if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
-              setIsPaused(true);
-          }
-          
-          return nextIndex;
-        });
+        advanceTimeline(timelineIndex + 1);
     }
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [isPaused, revealedTokenIndex, wpm, plan, timelineIndex, revealUntilToken]);
+  }, [isPaused, revealedTokenIndex, wpm, plan, timelineIndex, revealUntilToken, sessionCompleted, advanceTimeline]);
 
   useEffect(() => {
     if (revealedTokenRef.current) {
@@ -165,14 +201,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setRevealedTokenIndex(endOfTypedPhrase);
 
     const nextIndex = timelineIndex + 1;
-    setTimelineIndex(nextIndex);
-
-    const nextTimelineItem = plan?.timeline[nextIndex];
-    if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
-      setIsPaused(true);
-    } else {
-      setIsPaused(false);
-    }
+    advanceTimeline(nextIndex);
 
     // Reset input fields
     setUserInput('');
@@ -240,14 +269,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           setRevealedTokenIndex(endOfTypedPhrase);
 
           const nextIndex = timelineIndex + 1;
-          setTimelineIndex(nextIndex);
-
-          const nextTimelineItem = plan?.timeline[nextIndex];
-          if (nextTimelineItem && nextTimelineItem.pause_require.length > 0) {
-            setIsPaused(true);
-          } else {
-            setIsPaused(false);
-          }
+          advanceTimeline(nextIndex);
           
           setUserInput('');
           setFeedback(null);
@@ -261,16 +283,21 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     }
   };
   
-  const isFinished = timelineIndex >= (plan?.timeline.length ?? 0);
+  const isFinished = sessionCompleted;
+
+  const handleEndSession = () => {
+    setPlan(null);
+    setSessionCompleted(false);
+  };
 
   const handleModeChange = (type: CoPlayModeType) => {
     setModeOption(prev => {
       if (type === CoPlayModeType.AppFirstRandom || type === CoPlayModeType.UserFirstRandom) {
         const appSentences = typeof prev.appSentences === 'number' ? prev.appSentences : (lastAppSentencesRef.current || 1);
         const userSentences = typeof prev.userSentences === 'number' ? prev.userSentences : (lastUserSentencesRef.current || 1);
-        return { ...prev, type, appSentences, userSentences };
+        return { ...prev, type, appSentences, userSentences, startSentence: prev.startSentence, endSentence: prev.endSentence };
       }
-      return { ...prev, type };
+      return { ...prev, type, startSentence: prev.startSentence, endSentence: prev.endSentence };
     });
   };
 
@@ -288,16 +315,34 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setModeOption(prev => ({ ...prev, userSentences: sanitized }));
   };
 
+  const handleStartSentenceChange = (value: string) => {
+    const parsed = parseInt(value, 10);
+    const sanitized = Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+    setModeOption(prev => ({ 
+      ...prev, 
+      startSentence: Math.min(sanitized, prev.endSentence) 
+    }));
+  };
+
+  const handleEndSentenceChange = (value: string) => {
+    const parsed = parseInt(value, 10);
+    const sanitized = Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+    setModeOption(prev => ({ 
+      ...prev, 
+      endSentence: Math.max(sanitized, prev.startSentence) 
+    }));
+  };
+
   const toggleAppSentencesAll = () => {
     setModeOption(prev => {
       if (prev.appSentences === 'all') {
         const restored = lastAppSentencesRef.current || 1;
-        return { ...prev, appSentences: restored };
+        return { ...prev, appSentences: restored, userSentences: restored };
       }
       if (typeof prev.appSentences === 'number') {
         lastAppSentencesRef.current = prev.appSentences;
       }
-      return { ...prev, appSentences: 'all' };
+      return { ...prev, appSentences: 'all', userSentences: 0 };
     });
   };
 
@@ -305,12 +350,12 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
     setModeOption(prev => {
       if (prev.userSentences === 'all') {
         const restored = lastUserSentencesRef.current || 1;
-        return { ...prev, userSentences: restored };
+        return { ...prev, userSentences: restored, appSentences: restored };
       }
       if (typeof prev.userSentences === 'number') {
         lastUserSentencesRef.current = prev.userSentences;
       }
-      return { ...prev, userSentences: 'all' };
+      return { ...prev, userSentences: 'all', appSentences: 0 };
     });
   };
 
@@ -356,42 +401,78 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           </div>
           {[CoPlayModeType.AppFirstN, CoPlayModeType.UserFirstN].includes(modeOption.type) && (
             <div className="space-y-4">
-              <div>
-                <label htmlFor="app-sentences" className="block text-gray-300 mb-1">{t('coPlay.appSentences')}</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    id="app-sentences"
-                    type="number"
-                    min="1"
-                    value={modeOption.appSentences === 'all' ? '' : modeOption.appSentences}
-                    onChange={e => handleAppSentencesChange(e.target.value)}
-                    disabled={modeOption.appSentences === 'all'}
-                    placeholder={modeOption.appSentences === 'all' ? t('coPlay.allSentences') : undefined}
-                    className="w-24 bg-gray-800 border border-gray-600 rounded p-2 disabled:opacity-70"
-                  />
-                  <label className="flex items-center gap-2 text-sm text-gray-400">
-                    <input type="checkbox" className="accent-teal-500" checked={modeOption.appSentences === 'all'} onChange={toggleAppSentencesAll} />
-                    {t('coPlay.all')}
-                  </label>
+              <div className="border-b border-gray-700 pb-4">
+                <h3 className="text-lg font-semibold text-gray-300 mb-3">{t('coPlay.sentenceRange')}</h3>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <label htmlFor="start-sentence" className="block text-gray-300 mb-1 text-sm">{t('coPlay.fromSentence')}</label>
+                    <input
+                      id="start-sentence"
+                      type="number"
+                      min="1"
+                      max={totalSentences}
+                      value={modeOption.startSentence}
+                      onChange={e => handleStartSentenceChange(e.target.value)}
+                      className="w-20 bg-gray-800 border border-gray-600 rounded p-2"
+                    />
+                  </div>
+                  <div className="text-gray-400 py-2">to</div>
+                  <div>
+                    <label htmlFor="end-sentence" className="block text-gray-300 mb-1 text-sm">{t('coPlay.toSentence')}</label>
+                    <input
+                      id="end-sentence"
+                      type="number"
+                      min="1"
+                      max={totalSentences}
+                      value={modeOption.endSentence}
+                      onChange={e => handleEndSentenceChange(e.target.value)}
+                      className="w-20 bg-gray-800 border border-gray-600 rounded p-2"
+                    />
+                  </div>
+                  <div className="text-sm text-gray-400 py-2">
+                    {t('coPlay.totalSentences', { total: totalSentences })}
+                  </div>
                 </div>
               </div>
-              <div>
-                <label htmlFor="user-sentences" className="block text-gray-300 mb-1">{t('coPlay.userSentences')}</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    id="user-sentences"
-                    type="number"
-                    min="1"
-                    value={modeOption.userSentences === 'all' ? '' : modeOption.userSentences}
-                    onChange={e => handleUserSentencesChange(e.target.value)}
-                    disabled={modeOption.userSentences === 'all'}
-                    placeholder={modeOption.userSentences === 'all' ? t('coPlay.allSentences') : undefined}
-                    className="w-24 bg-gray-800 border border-gray-600 rounded p-2 disabled:opacity-70"
-                  />
-                  <label className="flex items-center gap-2 text-sm text-gray-400">
-                    <input type="checkbox" className="accent-teal-500" checked={modeOption.userSentences === 'all'} onChange={toggleUserSentencesAll} />
-                    {t('coPlay.all')}
-                  </label>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="app-sentences" className="block text-gray-300 mb-1">{t('coPlay.appSentences')}</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="app-sentences"
+                      type="number"
+                      min="1"
+                      value={modeOption.appSentences === 'all' ? '' : modeOption.appSentences}
+                      onChange={e => handleAppSentencesChange(e.target.value)}
+                      disabled={modeOption.appSentences === 'all'}
+                      placeholder={modeOption.appSentences === 'all' ? t('coPlay.allSentences') : undefined}
+                      className="w-24 bg-gray-800 border border-gray-600 rounded p-2 disabled:opacity-70"
+                    />
+                    <label className="flex items-center gap-2 text-sm text-gray-400">
+                      <input type="checkbox" className="accent-teal-500" checked={modeOption.appSentences === 'all'} onChange={toggleAppSentencesAll} />
+                      {t('coPlay.all')}
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="user-sentences" className="block text-gray-300 mb-1">{t('coPlay.userSentences')}</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="user-sentences"
+                      type="number"
+                      min="1"
+                      value={modeOption.userSentences === 'all' ? '' : modeOption.userSentences}
+                      onChange={e => handleUserSentencesChange(e.target.value)}
+                      disabled={modeOption.userSentences === 'all'}
+                      placeholder={modeOption.userSentences === 'all' ? t('coPlay.allSentences') : undefined}
+                      className="w-24 bg-gray-800 border border-gray-600 rounded p-2 disabled:opacity-70"
+                    />
+                    <label className="flex items-center gap-2 text-sm text-gray-400">
+                      <input type="checkbox" className="accent-teal-500" checked={modeOption.userSentences === 'all'} onChange={toggleUserSentencesAll} />
+                      {t('coPlay.all')}
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -471,7 +552,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
             )}
             <div class="flex gap-2">
               <Button onClick={handleReset} variant="secondary" size="sm">{t('coPlay.reset')}</Button>
-              <Button onClick={() => setPlan(null)} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
+              <Button onClick={handleEndSession} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
             </div>
           </div>
           <form onSubmit={handleSubmit} class="flex flex-col sm:flex-row items-center gap-3">
@@ -537,7 +618,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
               />
               <span class="font-mono text-teal-300 w-10 text-center">{wpm}</span>
             </div>
-            <Button onClick={() => setPlan(null)} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
+            <Button onClick={handleEndSession} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
         </div>
       )}
     </div>

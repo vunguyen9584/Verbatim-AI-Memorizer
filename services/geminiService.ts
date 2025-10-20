@@ -187,32 +187,44 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
         throw new Error(i18n.t('gemini.sentenceParseError'));
     }
 
+    // Apply sentence range: filter sentences based on start and end (1-based indices)
+    const startIdx = Math.max(1, Math.min(options.startSentence, sentences.length)) - 1;
+    const endIdx = Math.max(startIdx, Math.min(options.endSentence, sentences.length)) - 1;
+    const filteredSentences = sentences.slice(startIdx, endIdx + 1);
+
+    if (filteredSentences.length === 0) {
+        throw new Error(i18n.t('gemini.sentenceRangeError'));
+    }
+
     const timeline = [];
 
-    // Special case for short texts: reveal all, then pause for user to type all
-    if (options.appSentences === 'all' || sentences.length <= options.appSentences) {
+    // Special case for "all" selection or very short texts: reveal all, then pause for user to type all
+    if (options.appSentences === 'all' || options.userSentences === 'all') {
+        const firstTokenIdx = filteredSentences[0].tokenStart;
+        const lastTokenIdx = filteredSentences[filteredSentences.length - 1].tokenEnd;
+        
         timeline.push({
-            reveal_until_token: tokens.length,
+            reveal_until_token: (options.appSentences === 'all' ? lastTokenIdx : firstTokenIdx - 1) + 1,
             pause_require: [{
-                span: [0, tokens.length - 1],
-                user_sentences_to_type: options.userSentences === 'all' ? sentences.length : options.userSentences,
+                span: options.appSentences === 'all' ? [firstTokenIdx, lastTokenIdx] : [firstTokenIdx, lastTokenIdx],
+                user_sentences_to_type: options.userSentences === 'all' ? filteredSentences.length : (options.appSentences === 'all' ? 0 : options.userSentences),
             }],
         });
     } else {
         // Normal case: alternate app reveal n, user type n
-        let currentSentenceIndex = 0;
+        let currentSentenceIndex = startIdx;
         let isAppTurn = options.type === CoPlayModeType.AppFirstN || options.type === CoPlayModeType.AppFirstRandom;
 
-        while (currentSentenceIndex < sentences.length) {
+        while (currentSentenceIndex <= endIdx) {
             if (isAppTurn) {
                 // App reveals sentences
-                let sentencesToReveal = options.appSentences === 'all' ? sentences.length - currentSentenceIndex : options.appSentences;
+                let sentencesToReveal = options.appSentences === 'all' ? endIdx - currentSentenceIndex + 1 : options.appSentences;
                 if (options.type === CoPlayModeType.AppFirstRandom || options.type === CoPlayModeType.UserFirstRandom) {
                     sentencesToReveal = Math.floor(Math.random() * 3) + 1; // Random 1-3 sentences
                 }
 
-                let revealUntil = currentSentenceIndex;
-                for (let i = 0; i < sentencesToReveal && currentSentenceIndex < sentences.length; i++) {
+                let revealUntil = currentSentenceIndex > 0 ? sentences[currentSentenceIndex - 1].tokenEnd + 1 : 0;
+                for (let i = 0; i < sentencesToReveal && currentSentenceIndex <= endIdx; i++) {
                     revealUntil = sentences[currentSentenceIndex].tokenEnd + 1;
                     currentSentenceIndex++;
                 }
@@ -223,21 +235,29 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
                 });
             } else {
                 // User types sentences
-                let sentencesToType = options.userSentences === 'all' ? sentences.length - currentSentenceIndex : options.userSentences;
+                let sentencesToTypeRaw = options.userSentences === 'all' ? endIdx - currentSentenceIndex + 1 : options.userSentences;
                 if (options.type === CoPlayModeType.AppFirstRandom || options.type === CoPlayModeType.UserFirstRandom) {
-                    sentencesToType = Math.floor(Math.random() * 3) + 1; // Random 1-3 sentences
+                    sentencesToTypeRaw = Math.floor(Math.random() * 3) + 1; // Random 1-3 sentences
                 }
 
                 let typeUntil = currentSentenceIndex;
-                for (let i = 0; i < sentencesToType && typeUntil < sentences.length; i++) {
+                for (let i = 0; i < sentencesToTypeRaw && typeUntil <= endIdx; i++) {
                     typeUntil++;
                 }
 
-                const spanStart = timeline.length > 0 ? timeline[timeline.length - 1].reveal_until_token : 0;
-                const spanEnd = sentences[typeUntil - 1]?.tokenEnd ?? tokens.length - 1;
+                const sentencesToType = typeUntil - currentSentenceIndex;
+                if (sentencesToType === 0) {
+                    // This can happen if we are at the end and it's the user's turn with no sentences left.
+                    // Simply skip this turn.
+                    isAppTurn = !isAppTurn;
+                    continue;
+                }
+
+                const spanStart = currentSentenceIndex === startIdx ? sentences[startIdx].tokenStart : sentences[currentSentenceIndex - 1].tokenEnd + 1;
+                const spanEnd = sentences[typeUntil - 1].tokenEnd;
 
                 timeline.push({
-                    reveal_until_token: Math.max(spanStart - 1, -1),
+                    reveal_until_token: spanStart,
                     pause_require: [{
                         span: [spanStart, spanEnd],
                         user_sentences_to_type: sentencesToType,

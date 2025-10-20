@@ -92,6 +92,8 @@ export interface CoPlayModeOption {
   type: CoPlayModeType;
   appSentences: number | 'all';
   userSentences: number | 'all';
+  startSentence: number;
+  endSentence: number;
 }
 
 // --- MEMORY TIPS TYPES ---
