@@ -121,10 +121,19 @@ export interface MemoryAcrosticResult {
 
 // --- LESSON MANAGEMENT TYPES ---
 
+export interface Folder {
+  id: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isDefault: boolean;
+}
+
 export interface Lesson {
   id: string;
   title: string;
   content: string;
+  folderId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -136,6 +145,17 @@ export interface LessonStorage {
   deleteLesson: (id: string) => Promise<void>;
   getLesson: (id: string) => Promise<Lesson | null>;
   getAllLessons: () => Promise<Lesson[]>;
+  getLessonsByFolder: (folderId: string) => Promise<Lesson[]>;
+}
+
+export interface FolderStorage {
+  folders: Folder[];
+  saveFolder: (folder: Omit<Folder, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Folder>;
+  updateFolder: (id: string, updates: Partial<Folder>) => Promise<Folder>;
+  deleteFolder: (id: string) => Promise<void>;
+  getFolder: (id: string) => Promise<Folder | null>;
+  getAllFolders: () => Promise<Folder[]>;
+  getDefaultFolder: () => Promise<Folder>;
 }
 
 export interface ToastMessage {

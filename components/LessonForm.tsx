@@ -1,27 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Lesson } from '../types';
+import { Lesson, Folder } from '../types';
 import { lessonStorageService } from '../services/lessonStorageService';
+import { folderStorageService } from '../services/folderStorageService';
 import Button from './common/Button';
 import { XCircleIcon } from './common/Icon';
 
 interface LessonFormProps {
   lesson?: Lesson | null;
+  currentFolderId?: string;
   onClose: () => void;
   onSuccess: () => void;
   onError: (message: string) => void;
 }
 
-const LessonForm: React.FC<LessonFormProps> = ({ lesson, onClose, onSuccess, onError }) => {
+const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClose, onSuccess, onError }) => {
   const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [folderId, setFolderId] = useState('');
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(true);
+
+  useEffect(() => {
+    const loadFolders = async () => {
+      try {
+        setIsLoadingFolders(true);
+        const allFolders = await folderStorageService.getAllFolders();
+        setFolders(allFolders.sort((a, b) => {
+          // Default folder always first
+          if (a.isDefault) return -1;
+          if (b.isDefault) return 1;
+          return a.name.localeCompare(b.name);
+        }));
+
+        // Set default folder if no folder is selected
+        if (!lesson && !currentFolderId) {
+          const defaultFolder = await folderStorageService.getDefaultFolder();
+          setFolderId(defaultFolder.id);
+        } else if (currentFolderId && !lesson) {
+          setFolderId(currentFolderId);
+        }
+      } catch (error) {
+        console.error('Error loading folders:', error);
+        onError(t('folderManagement.loadError'));
+      } finally {
+        setIsLoadingFolders(false);
+      }
+    };
+
+    loadFolders();
+  }, [lesson, currentFolderId, onError, t]);
 
   useEffect(() => {
     if (lesson) {
       setTitle(lesson.title);
       setContent(lesson.content);
+      setFolderId(lesson.folderId);
     }
   }, [lesson]);
 
@@ -33,18 +69,25 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, onClose, onSuccess, onE
       return;
     }
 
+    if (!folderId) {
+      onError(t('lessonForm.folderRequired'));
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
       if (lesson) {
         await lessonStorageService.updateLesson(lesson.id, {
           title: title.trim(),
-          content: content.trim()
+          content: content.trim(),
+          folderId: folderId
         });
       } else {
         await lessonStorageService.saveLesson({
           title: title.trim(),
-          content: content.trim()
+          content: content.trim(),
+          folderId: folderId
         });
       }
       
@@ -101,6 +144,29 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, onClose, onSuccess, onE
             </div>
 
             <div>
+              <label htmlFor="folder" className="block text-sm font-medium text-gray-200 mb-2">
+                {t('lessonForm.folderLabel')}
+              </label>
+              <select
+                id="folder"
+                value={folderId}
+                onChange={(e) => setFolderId(e.target.value)}
+                className="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200"
+                disabled={isSubmitting || isLoadingFolders}
+              >
+                {isLoadingFolders ? (
+                  <option value="">{t('lessonForm.loadingFolders')}</option>
+                ) : (
+                  folders.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div>
               <label htmlFor="content" className="block text-sm font-medium text-gray-200 mb-2">
                 {t('lessonForm.contentLabel')}
               </label>
@@ -131,7 +197,7 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, onClose, onSuccess, onE
             <Button
               type="submit"
               variant="primary"
-              disabled={isSubmitting || !title.trim() || !content.trim()}
+              disabled={isSubmitting || !title.trim() || !content.trim() || !folderId}
             >
               {isSubmitting 
                 ? t('lessonForm.saving') 

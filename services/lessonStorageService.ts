@@ -2,6 +2,7 @@ import { Lesson, LessonStorage } from '../types';
 
 class LocalStorageLessonService implements LessonStorage {
   private readonly STORAGE_KEY = 'verbatim_lessons';
+  private readonly DEFAULT_FOLDER_ID = 'default';
 
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -13,11 +14,33 @@ class LocalStorageLessonService implements LessonStorage {
       if (!stored) return [];
       
       const lessons = JSON.parse(stored);
-      return lessons.map((lesson: any) => ({
-        ...lesson,
-        createdAt: new Date(lesson.createdAt),
-        updatedAt: new Date(lesson.updatedAt)
-      }));
+      let needsMigration = false;
+      
+      const parsedLessons = lessons.map((lesson: any) => {
+        // Migration: add folderId if it doesn't exist
+        if (!lesson.folderId) {
+          needsMigration = true;
+          return {
+            ...lesson,
+            folderId: this.DEFAULT_FOLDER_ID,
+            createdAt: new Date(lesson.createdAt),
+            updatedAt: new Date(lesson.updatedAt)
+          };
+        }
+        
+        return {
+          ...lesson,
+          createdAt: new Date(lesson.createdAt),
+          updatedAt: new Date(lesson.updatedAt)
+        };
+      });
+      
+      // Save migrated data back to storage
+      if (needsMigration) {
+        this.saveToStorage(parsedLessons);
+      }
+      
+      return parsedLessons;
     } catch (error) {
       console.error('Error loading lessons from storage:', error);
       return [];
@@ -86,6 +109,11 @@ class LocalStorageLessonService implements LessonStorage {
 
   async getAllLessons(): Promise<Lesson[]> {
     return this.getStoredLessons();
+  }
+
+  async getLessonsByFolder(folderId: string): Promise<Lesson[]> {
+    const lessons = this.getStoredLessons();
+    return lessons.filter(lesson => lesson.folderId === folderId);
   }
 
   get lessons(): Lesson[] {

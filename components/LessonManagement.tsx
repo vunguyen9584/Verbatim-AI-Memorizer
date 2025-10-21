@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Lesson } from '../types';
+import { Lesson, Folder } from '../types';
 import { lessonStorageService } from '../services/lessonStorageService';
+import { folderStorageService } from '../services/folderStorageService';
 import { useToast } from './common/Toast';
 import Card from './common/Card';
 import Button from './common/Button';
-import { EditIcon, TrashIcon, PlayIcon } from './common/Icon';
+import { EditIcon, TrashIcon, PlayIcon, ArrowLeftIcon } from './common/Icon';
 import LessonForm from './LessonForm';
+import FolderManagement from './FolderManagement';
 
 const LessonManagement: React.FC = () => {
   const { t } = useTranslation();
@@ -15,11 +17,20 @@ const LessonManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
 
-  const loadLessons = useCallback(async () => {
+  const loadLessons = useCallback(async (folderId?: string) => {
     try {
       setIsLoading(true);
-      const allLessons = await lessonStorageService.getAllLessons();
+      let allLessons: Lesson[];
+      
+      if (folderId) {
+        allLessons = await lessonStorageService.getLessonsByFolder(folderId);
+      } else {
+        allLessons = await lessonStorageService.getAllLessons();
+      }
+      
       setLessons(allLessons.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
     } catch (error) {
       console.error('Error loading lessons:', error);
@@ -34,8 +45,33 @@ const LessonManagement: React.FC = () => {
   }, [showToast, t]);
 
   useEffect(() => {
-    loadLessons();
-  }, [loadLessons]);
+    if (selectedFolder) {
+      loadLessons(selectedFolder.id);
+    }
+  }, [selectedFolder, loadLessons]);
+
+  const handleFolderSelect = async (folderId: string) => {
+    try {
+      const folder = await folderStorageService.getFolder(folderId);
+      if (folder) {
+        setSelectedFolder(folder);
+        setCurrentFolder(folder);
+        await loadLessons(folderId);
+      }
+    } catch (error) {
+      console.error('Error selecting folder:', error);
+      showToast({
+        type: 'error',
+        message: t('folderManagement.loadError'),
+        persistent: true
+      });
+    }
+  };
+
+  const handleBackToFolders = () => {
+    setSelectedFolder(null);
+    setCurrentFolder(null);
+  };
 
   const handleEdit = (lesson: Lesson) => {
     setEditingLesson(lesson);
@@ -49,7 +85,7 @@ const LessonManagement: React.FC = () => {
 
     try {
       await lessonStorageService.deleteLesson(lesson.id);
-      await loadLessons();
+      await loadLessons(selectedFolder?.id);
       showToast({
         type: 'success',
         message: t('lessonManagement.deleteSuccess')
@@ -77,7 +113,7 @@ const LessonManagement: React.FC = () => {
   };
 
   const handleFormSuccess = async () => {
-    await loadLessons();
+    await loadLessons(selectedFolder?.id);
     handleFormClose();
     showToast({
       type: 'success',
@@ -97,6 +133,12 @@ const LessonManagement: React.FC = () => {
     }).format(date);
   };
 
+  // Show folder list if no folder is selected
+  if (!selectedFolder) {
+    return <FolderManagement onFolderSelect={handleFolderSelect} />;
+  }
+
+  // Show lessons for selected folder
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -108,7 +150,20 @@ const LessonManagement: React.FC = () => {
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-teal-400">{t('lessonManagement.title')}</h2>
+        <div className="flex items-center gap-4">
+          <Button 
+            onClick={handleBackToFolders} 
+            variant="secondary"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+            {t('lessonManagement.backToFolders')}
+          </Button>
+          <h2 className="text-2xl font-bold text-teal-400">
+            {currentFolder?.name}
+          </h2>
+        </div>
         <Button onClick={() => setIsFormOpen(true)} variant="primary">
           {t('lessonManagement.createLesson')}
         </Button>
@@ -175,6 +230,7 @@ const LessonManagement: React.FC = () => {
       {isFormOpen && (
         <LessonForm
           lesson={editingLesson}
+          currentFolderId={selectedFolder.id}
           onClose={handleFormClose}
           onSuccess={handleFormSuccess}
           onError={(message) => showToast({
