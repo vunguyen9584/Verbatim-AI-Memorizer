@@ -125,21 +125,12 @@ const App: React.FC = () => {
         ) : (
           <>
             <div className="lg:col-span-1 flex flex-col gap-6">
-              <div className="relative">
-                <TextInputArea onTextSubmit={handleTextSubmit} hasSubmittedText={!!text} />
-                {currentLesson && (
-                  <div className="mt-2 p-2 bg-gray-700/50 rounded-lg">
-                    <p className="text-xs text-gray-400 mb-1">{t('lessonManagement.currentLesson')}:</p>
-                    <p className="text-sm font-medium text-white truncate">{currentLesson.title}</p>
-                    <button
-                      onClick={handleBackToLessons}
-                      className="text-xs text-teal-400 hover:text-teal-300 mt-1"
-                    >
-                      {t('lessonManagement.backToLessons')}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <TextInputArea 
+                onTextSubmit={handleTextSubmit} 
+                hasSubmittedText={!!text} 
+                currentLesson={currentLesson}
+                onBackToLessons={handleBackToLessons}
+              />
               {text && <ModeSelector currentMode={mode} onSelectMode={setMode} />}
             </div>
             
