@@ -118,3 +118,30 @@ export interface MemoryStoryResult {
 export interface MemoryAcrosticResult {
   sentence: string;
 }
+
+// --- LESSON MANAGEMENT TYPES ---
+
+export interface Lesson {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LessonStorage {
+  lessons: Lesson[];
+  saveLesson: (lesson: Omit<Lesson, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Lesson>;
+  updateLesson: (id: string, updates: Partial<Lesson>) => Promise<Lesson>;
+  deleteLesson: (id: string) => Promise<void>;
+  getLesson: (id: string) => Promise<Lesson | null>;
+  getAllLessons: () => Promise<Lesson[]>;
+}
+
+export interface ToastMessage {
+  id: string;
+  type: 'success' | 'error';
+  message: string;
+  duration?: number;
+  persistent?: boolean;
+}

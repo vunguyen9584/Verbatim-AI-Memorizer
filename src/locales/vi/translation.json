@@ -141,5 +141,41 @@
     "acrosticAnalysisPrompt": "Bạn là một chuyên gia phân tích văn bản để tạo ra các từ viết tắt ghi nhớ. Nhiệmvụ của bạn là đọc văn bản sau và trích xuất từ khóa quan trọng nhất từ mỗi câu, từ đại diện cho ý chính của câu đó.\n\nVăn bản:\n---\n{{text}}\n---\n\n Trả về một JSON có mảng 'từ khóa' chứa các từ khóa theo thứ tự của các câu.",
     "acrosticSynthesisPrompt": "Bạn là một chuyên gia trong việc tạo ra các từ viết tắt ghi nhớ. Dựa trên chuỗi ký tự đầu vào, hãy tạo một câu hoàn chỉnh, dễ nhớ và đúng ngữ pháp, trong đó từ đầu tiên bắt đầu bằng ký tự đầu tiên, từ thứ hai bắt đầu bằng ký tự thứ hai, v.v.\n\nChuỗi ký tự: {{initial_letters}}\n\nCâu ghi nhớ của bạn:",
     "memoryTipsGenerationError": "Không thể tạo mẹo ghi nhớ. Mô hình AI có thể tạm thời không khả dụng."
+  },
+  "lessonManagement": {
+    "title": "Quản lý bài học",
+    "createLesson": "Tạo bài học",
+    "noLessons": "Không tìm thấy bài học nào",
+    "createFirstLesson": "Tạo bài học đầu tiên của bạn để bắt đầu",
+    "lastUpdated": "Cập nhật lần cuối",
+    "loadError": "Không thể tải bài học",
+    "deleteConfirm": "Bạn có chắc chắn muốn xóa \"{{title}}\"?",
+    "deleteSuccess": "Xóa bài học thành công",
+    "deleteError": "Không thể xóa bài học",
+    "createSuccess": "Tạo bài học thành công",
+    "updateSuccess": "Cập nhật bài học thành công",
+    "currentLesson": "Bài học hiện tại",
+    "backToLessons": "Quay lại danh sách bài học"
+  },
+  "lessonForm": {
+    "createLesson": "Tạo bài học",
+    "editLesson": "Chỉnh sửa bài học",
+    "titleLabel": "Tiêu đề",
+    "titlePlaceholder": "Nhập tiêu đề bài học...",
+    "contentLabel": "Nội dung",
+    "contentPlaceholder": "Dán hoặc nhập nội dung bài học của bạn vào đây...",
+    "characterCount": "{{count}} ký tự",
+    "close": "Đóng",
+    "cancel": "Hủy",
+    "create": "Tạo",
+    "update": "Cập nhật",
+    "saving": "Đang lưu...",
+    "validationRequired": "Tiêu đề và nội dung là bắt buộc",
+    "createError": "Không thể tạo bài học",
+    "updateError": "Không thể cập nhật bài học",
+    "unsavedChanges": "Bạn có thay đổi chưa được lưu. Bạn có chắc chắn muốn đóng?"
+  },
+  "toast": {
+    "close": "Đóng thông báo"
   }
 }

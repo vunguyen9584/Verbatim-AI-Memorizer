@@ -141,5 +141,41 @@
     "acrosticAnalysisPrompt": "You are an expert in text analysis for creating mnemonic acrostics. Your task is to read the following text and extract the most important keyword from each sentence, the one that represents the main idea of that sentence.\n\nText:\n---\n{{text}}\n---\n\nReturn a JSON with a 'keywords' array containing the keywords in the order of the sentences.",
     "acrosticSynthesisPrompt": "You are an expert in creating mnemonic acrostics. Based on the input character string, create a complete, memorable, and grammatically correct sentence where the first word begins with the first character, the second word with the second character, and so on.\n\nCharacter string: {{initial_letters}}\n\nYour mnemonic sentence:",
     "memoryTipsGenerationError": "Failed to generate memory tips. The AI model may be temporarily unavailable."
+  },
+  "lessonManagement": {
+    "title": "Lesson Management",
+    "createLesson": "Create Lesson",
+    "noLessons": "No lessons found",
+    "createFirstLesson": "Create your first lesson to get started",
+    "lastUpdated": "Last updated",
+    "loadError": "Failed to load lessons",
+    "deleteConfirm": "Are you sure you want to delete \"{{title}}\"?",
+    "deleteSuccess": "Lesson deleted successfully",
+    "deleteError": "Failed to delete lesson",
+    "createSuccess": "Lesson created successfully",
+    "updateSuccess": "Lesson updated successfully",
+    "currentLesson": "Current lesson",
+    "backToLessons": "Back to lessons"
+  },
+  "lessonForm": {
+    "createLesson": "Create Lesson",
+    "editLesson": "Edit Lesson",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter lesson title...",
+    "contentLabel": "Content",
+    "contentPlaceholder": "Paste or type your lesson content here...",
+    "characterCount": "{{count}} characters",
+    "close": "Close",
+    "cancel": "Cancel",
+    "create": "Create",
+    "update": "Update",
+    "saving": "Saving...",
+    "validationRequired": "Title and content are required",
+    "createError": "Failed to create lesson",
+    "updateError": "Failed to update lesson",
+    "unsavedChanges": "You have unsaved changes. Are you sure you want to close?"
+  },
+  "toast": {
+    "close": "Close notification"
   }
 }
