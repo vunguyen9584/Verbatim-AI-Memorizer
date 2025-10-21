@@ -178,7 +178,11 @@
     "updateSuccess": "Folder updated successfully",
     "updateError": "Failed to update folder",
     "createError": "Failed to create folder",
-    "nameRequired": "Folder name is required"
+    "nameRequired": "Folder name is required",
+    "hint": "Hint",
+    "dragDropHint": "You can drag and drop folders to reorder them (except the Default folder)",
+    "reorderSuccess": "Folder order updated successfully",
+    "reorderError": "Failed to update folder order"
   },
   "lessonForm": {
     "createLesson": "Create Lesson",

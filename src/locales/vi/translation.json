@@ -178,7 +178,11 @@
     "updateSuccess": "Cập nhật thư mục thành công",
     "updateError": "Không thể cập nhật thư mục",
     "createError": "Không thể tạo thư mục",
-    "nameRequired": "Tên thư mục là bắt buộc"
+    "nameRequired": "Tên thư mục là bắt buộc",
+    "hint": "Gợi ý",
+    "dragDropHint": "Bạn có thể giữ và kéo thư mục để thay đổi thứ tự hiển thị (trừ thư mục Mặc định)",
+    "reorderSuccess": "Đã cập nhật thứ tự hiển thị thư mục",
+    "reorderError": "Không thể cập nhật thứ tự hiển thị thư mục"
   },
   "lessonForm": {
     "createLesson": "Tạo bài học",

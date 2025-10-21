@@ -21,17 +21,15 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
   const [editingName, setEditingName] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [draggedFolder, setDraggedFolder] = useState<Folder | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<Folder | null>(null);
 
   const loadFolders = useCallback(async () => {
     try {
       setIsLoading(true);
       const allFolders = await folderStorageService.getAllFolders();
-      setFolders(allFolders.sort((a, b) => {
-        // Default folder always first
-        if (a.isDefault) return -1;
-        if (b.isDefault) return 1;
-        return b.updatedAt.getTime() - a.updatedAt.getTime();
-      }));
+      // Folders are already sorted by displayOrder in the service
+      setFolders(allFolders);
     } catch (error) {
       console.error('Error loading folders:', error);
       showToast({
@@ -148,6 +146,79 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
     }
   };
 
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, folder: Folder) => {
+    if (folder.isDefault) {
+      e.preventDefault();
+      return;
+    }
+    
+    setDraggedFolder(folder);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', folder.id);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, folder: Folder) => {
+    e.preventDefault();
+    if (!draggedFolder || draggedFolder.id === folder.id) return;
+    
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverFolder(folder);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverFolder(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, targetFolder: Folder) => {
+    e.preventDefault();
+    
+    if (!draggedFolder || draggedFolder.id === targetFolder.id) {
+      setDraggedFolder(null);
+      setDragOverFolder(null);
+      return;
+    }
+
+    try {
+      // Create new order
+      const newFolders = [...folders];
+      const draggedIndex = newFolders.findIndex(f => f.id === draggedFolder.id);
+      const targetIndex = newFolders.findIndex(f => f.id === targetFolder.id);
+
+      // Remove dragged folder and insert at target position
+      const [removed] = newFolders.splice(draggedIndex, 1);
+      newFolders.splice(targetIndex, 0, removed);
+
+      // Update local state immediately for smooth UX
+      setFolders(newFolders);
+
+      // Save to storage
+      const folderIds = newFolders.map(f => f.id);
+      await folderStorageService.reorderFolders(folderIds);
+
+      showToast({
+        type: 'success',
+        message: t('folderManagement.reorderSuccess')
+      });
+    } catch (error) {
+      console.error('Error reordering folders:', error);
+      // Reload folders to revert to saved state
+      await loadFolders();
+      showToast({
+        type: 'error',
+        message: t('folderManagement.reorderError'),
+        persistent: true
+      });
+    } finally {
+      setDraggedFolder(null);
+      setDragOverFolder(null);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedFolder(null);
+    setDragOverFolder(null);
+  };
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat(undefined, {
       year: 'numeric',
@@ -168,11 +239,18 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-teal-400">{t('folderManagement.title')}</h2>
         <Button onClick={() => setIsCreating(true)} variant="primary">
           {t('folderManagement.createFolder')}
         </Button>
+      </div>
+
+      <div className="mb-4 p-3 bg-gray-700/30 rounded-lg border border-gray-600/50">
+        <p className="text-sm text-gray-300">
+          <span className="text-teal-400 font-medium">💡 {t('folderManagement.hint')}:</span>{' '}
+          {t('folderManagement.dragDropHint')}
+        </p>
       </div>
 
       {isCreating && (
@@ -203,74 +281,100 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
 
       <div className="space-y-4 overflow-y-auto flex-grow">
         {folders.map((folder) => (
-          <Card key={folder.id} className="hover:bg-gray-700/50 transition-colors">
-            {editingFolder?.id === folder.id ? (
-              <div className="flex gap-2 items-center">
-                <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
-                <input
-                  type="text"
-                  value={editingName}
-                  onChange={(e) => setEditingName(e.target.value)}
-                  className="flex-grow bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  autoFocus
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSaveEdit();
-                    }
-                  }}
-                />
-                <Button onClick={handleSaveEdit} variant="primary" size="sm">
-                  {t('folderManagement.save')}
-                </Button>
-                <Button onClick={handleCancelEdit} variant="secondary" size="sm">
-                  {t('folderManagement.cancel')}
-                </Button>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center">
-                <button
-                  onClick={() => onFolderSelect(folder.id)}
-                  className="flex-grow flex items-center gap-3 text-left group"
-                >
+          <div
+            key={folder.id}
+            draggable={!folder.isDefault && editingFolder?.id !== folder.id}
+            onDragStart={(e) => handleDragStart(e, folder)}
+            onDragOver={(e) => handleDragOver(e, folder)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, folder)}
+            onDragEnd={handleDragEnd}
+            className={`select-none ${
+              !folder.isDefault && editingFolder?.id !== folder.id ? 'cursor-move' : ''
+            } ${
+              draggedFolder?.id === folder.id ? 'opacity-50' : ''
+            }`}
+            style={{
+              WebkitUserDrag: !folder.isDefault && editingFolder?.id !== folder.id ? 'element' : 'none'
+            }}
+          >
+            <Card 
+              className={`transition-all hover:bg-gray-700/50 ${
+                dragOverFolder?.id === folder.id ? 'border-2 border-teal-400 bg-gray-700/30' : ''
+              }`}
+            >
+              {editingFolder?.id === folder.id ? (
+                <div className="flex gap-2 items-center">
                   <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
-                  <div className="flex-grow">
-                    <h3 className="text-lg font-semibold text-white group-hover:text-teal-400 transition-colors">
-                      {folder.name}
-                      {folder.isDefault && (
-                        <span className="ml-2 text-xs text-gray-500">({t('folderManagement.default')})</span>
-                      )}
-                    </h3>
-                    <p className="text-gray-500 text-xs">
-                      {t('folderManagement.lastUpdated')}: {formatDate(folder.updatedAt)}
-                    </p>
-                  </div>
-                  <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-teal-400 transition-colors" />
-                </button>
-                <div className="flex gap-2 flex-shrink-0 ml-4">
-                  {!folder.isDefault && (
-                    <>
-                      <Button
-                        onClick={() => handleEdit(folder)}
-                        variant="secondary"
-                        size="sm"
-                        className="px-3 py-1"
-                      >
-                        <EditIcon className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        onClick={() => handleDelete(folder)}
-                        variant="ghost"
-                        size="sm"
-                        className="px-3 py-1 text-red-400 hover:text-red-300"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </Button>
-                    </>
-                  )}
+                  <input
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    className="flex-grow bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    autoFocus
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveEdit();
+                      }
+                    }}
+                  />
+                  <Button onClick={handleSaveEdit} variant="primary" size="sm">
+                    {t('folderManagement.save')}
+                  </Button>
+                  <Button onClick={handleCancelEdit} variant="secondary" size="sm">
+                    {t('folderManagement.cancel')}
+                  </Button>
                 </div>
-              </div>
-            )}
-          </Card>
+              ) : (
+                <div className="flex justify-between items-center">
+                  <div
+                    onClick={() => onFolderSelect(folder.id)}
+                    className="flex-grow flex items-center gap-3 text-left group cursor-pointer"
+                  >
+                    <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                    <div className="flex-grow">
+                      <h3 className="text-lg font-semibold text-white group-hover:text-teal-400 transition-colors">
+                        {folder.name}
+                        {folder.isDefault && (
+                          <span className="ml-2 text-xs text-gray-500">({t('folderManagement.default')})</span>
+                        )}
+                      </h3>
+                      <p className="text-gray-500 text-xs">
+                        {t('folderManagement.lastUpdated')}: {formatDate(folder.updatedAt)}
+                      </p>
+                    </div>
+                    <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-teal-400 transition-colors" />
+                  </div>
+                  <div 
+                    className="flex gap-2 flex-shrink-0 ml-4"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {!folder.isDefault && (
+                      <>
+                        <Button
+                          onClick={() => handleEdit(folder)}
+                          variant="secondary"
+                          size="sm"
+                          className="px-3 py-1"
+                        >
+                          <EditIcon className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete(folder)}
+                          variant="ghost"
+                          size="sm"
+                          className="px-3 py-1 text-red-400 hover:text-red-300"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+          </div>
         ))}
       </div>
     </div>

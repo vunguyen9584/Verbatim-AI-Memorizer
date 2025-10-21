@@ -124,6 +124,7 @@ export interface MemoryAcrosticResult {
 export interface Folder {
   id: string;
   name: string;
+  displayOrder: number;
   createdAt: Date;
   updatedAt: Date;
   isDefault: boolean;
@@ -156,6 +157,7 @@ export interface FolderStorage {
   getFolder: (id: string) => Promise<Folder | null>;
   getAllFolders: () => Promise<Folder[]>;
   getDefaultFolder: () => Promise<Folder>;
+  reorderFolders: (folderIds: string[]) => Promise<void>;
 }
 
 export interface ToastMessage {
