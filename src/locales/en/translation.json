@@ -155,7 +155,9 @@
     "createSuccess": "Lesson created successfully",
     "updateSuccess": "Lesson updated successfully",
     "currentLesson": "Current lesson",
-    "backToLessons": "Back to lessons"
+    "backToLessons": "Back to lessons",
+    "backToLessonsShort": "Back",
+    "editLesson": "Edit lesson"
   },
   "lessonForm": {
     "createLesson": "Create Lesson",

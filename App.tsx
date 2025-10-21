@@ -9,17 +9,22 @@ import PlayMode from './components/PlayMode';
 import CoPlayMode from './components/CoPlayMode';
 import MemorizeTipsMode from './components/MemorizeTipsMode';
 import LessonManagement from './components/LessonManagement';
+import LessonForm from './components/LessonForm';
 import { BrainCircuitIcon, BugIcon } from './components/common/Icon';
 import DebugPanel from './components/DebugPanel';
-import { ToastProvider } from './components/common/Toast';
+import { ToastProvider, useToast } from './components/common/Toast';
+import { lessonStorageService } from './services/lessonStorageService';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { showToast } = useToast();
   const [text, setText] = useState<string>('');
   const [mode, setMode] = useState<LearningMode | null>(null);
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'learning' | 'lessons'>('learning');
+  const [currentView, setCurrentView] = useState<'learning' | 'lessons'>('lessons');
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
   useEffect(() => {
     const handleStartLearning = (event: CustomEvent) => {
@@ -50,6 +55,40 @@ const App: React.FC = () => {
     setMode(null);
     setCurrentLesson(null);
   }, []);
+
+  const handleEditLesson = useCallback((lesson: Lesson) => {
+    setEditingLesson(lesson);
+    setIsEditFormOpen(true);
+  }, []);
+
+  const handleEditFormClose = useCallback(() => {
+    setIsEditFormOpen(false);
+    setEditingLesson(null);
+  }, []);
+
+  const handleEditFormSuccess = useCallback(async () => {
+    try {
+      if (editingLesson) {
+        const updatedLesson = await lessonStorageService.getLessonById(editingLesson.id);
+        if (updatedLesson) {
+          setCurrentLesson(updatedLesson);
+          setText(updatedLesson.content);
+        }
+      }
+      handleEditFormClose();
+      showToast({
+        type: 'success',
+        message: t('lessonManagement.updateSuccess')
+      });
+    } catch (error) {
+      console.error('Error refreshing lesson:', error);
+      showToast({
+        type: 'error',
+        message: t('lessonManagement.loadError'),
+        persistent: true
+      });
+    }
+  }, [editingLesson, handleEditFormClose, showToast, t]);
 
   const tokens = useMemo(() => {
     if (!text) return [];
@@ -87,8 +126,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
         <header className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />
@@ -99,16 +137,6 @@ const App: React.FC = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentView(currentView === 'learning' ? 'lessons' : 'learning')}
-              className={`px-3 py-1 text-sm rounded font-medium transition-colors ${
-                currentView === 'lessons'
-                  ? 'bg-teal-500 text-white'
-                  : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-              }`}
-            >
-              {currentView === 'lessons' ? t('lessonManagement.title') : t('textInput.title')}
-            </button>
             <button onClick={() => changeLanguage('en')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>EN</button>
             <button onClick={() => changeLanguage('vi')} className={`px-2 py-1 text-sm rounded ml-2 ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>VI</button>
             <button onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)} className="text-gray-500 hover:text-teal-400 transition-colors ml-4" aria-label={t('openDebugPanel')}>
@@ -130,6 +158,7 @@ const App: React.FC = () => {
                 hasSubmittedText={!!text} 
                 currentLesson={currentLesson}
                 onBackToLessons={handleBackToLessons}
+                onEditLesson={handleEditLesson}
               />
               {text && <ModeSelector currentMode={mode} onSelectMode={setMode} />}
             </div>
@@ -144,7 +173,27 @@ const App: React.FC = () => {
       </main>
 
       <DebugPanel isOpen={isDebugPanelOpen} onClose={() => setIsDebugPanelOpen(false)} />
+      
+      {isEditFormOpen && (
+        <LessonForm
+          lesson={editingLesson}
+          onClose={handleEditFormClose}
+          onSuccess={handleEditFormSuccess}
+          onError={(message) => showToast({
+            type: 'error',
+            message,
+            persistent: true
+          })}
+        />
+      )}
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ToastProvider>
+      <AppContent />
     </ToastProvider>
   );
 };

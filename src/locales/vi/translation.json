@@ -155,7 +155,9 @@
     "createSuccess": "Tạo bài học thành công",
     "updateSuccess": "Cập nhật bài học thành công",
     "currentLesson": "Bài học hiện tại",
-    "backToLessons": "Quay lại danh sách bài học"
+    "backToLessons": "Quay lại danh sách bài học",
+    "backToLessonsShort": "Quay lại",
+    "editLesson": "Chỉnh sửa bài học"
   },
   "lessonForm": {
     "createLesson": "Tạo bài học",
