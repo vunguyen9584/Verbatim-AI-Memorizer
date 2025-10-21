@@ -23,6 +23,7 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
   const [isCreating, setIsCreating] = useState(false);
   const [draggedFolder, setDraggedFolder] = useState<Folder | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<Folder | null>(null);
+  const [lessonCounts, setLessonCounts] = useState<Record<string, number>>({});
 
   const loadFolders = useCallback(async () => {
     try {
@@ -30,6 +31,14 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
       const allFolders = await folderStorageService.getAllFolders();
       // Folders are already sorted by displayOrder in the service
       setFolders(allFolders);
+      
+      // Load lesson counts for each folder
+      const counts: Record<string, number> = {};
+      for (const folder of allFolders) {
+        const lessons = await lessonStorageService.getLessonsByFolder(folder.id);
+        counts[folder.id] = lessons.length;
+      }
+      setLessonCounts(counts);
     } catch (error) {
       console.error('Error loading folders:', error);
       showToast({
@@ -173,6 +182,18 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
     e.preventDefault();
     
     if (!draggedFolder || draggedFolder.id === targetFolder.id) {
+      setDraggedFolder(null);
+      setDragOverFolder(null);
+      return;
+    }
+
+    // Prevent moving any folder above the default folder
+    if (targetFolder.isDefault) {
+      showToast({
+        type: 'error',
+        message: t('folderManagement.cannotMoveAboveDefault'),
+        persistent: true
+      });
       setDraggedFolder(null);
       setDragOverFolder(null);
       return;
@@ -333,12 +354,17 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
                   >
                     <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
                     <div className="flex-grow">
-                      <h3 className="text-lg font-semibold text-white group-hover:text-teal-400 transition-colors">
-                        {folder.name}
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-teal-400 transition-colors">
+                          {folder.name}
+                        </h3>
                         {folder.isDefault && (
-                          <span className="ml-2 text-xs text-gray-500">({t('folderManagement.default')})</span>
+                          <span className="text-xs text-gray-500">({t('folderManagement.default')})</span>
                         )}
-                      </h3>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-teal-400/20 text-teal-300 border border-teal-400/30">
+                          {lessonCounts[folder.id] || 0} {t('folderManagement.lessons')}
+                        </span>
+                      </div>
                       <p className="text-gray-500 text-xs">
                         {t('folderManagement.lastUpdated')}: {formatDate(folder.updatedAt)}
                       </p>

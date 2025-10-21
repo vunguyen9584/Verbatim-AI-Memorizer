@@ -182,7 +182,9 @@
     "hint": "Gợi ý",
     "dragDropHint": "Bạn có thể giữ và kéo thư mục để thay đổi thứ tự hiển thị (trừ thư mục Mặc định)",
     "reorderSuccess": "Đã cập nhật thứ tự hiển thị thư mục",
-    "reorderError": "Không thể cập nhật thứ tự hiển thị thư mục"
+    "reorderError": "Không thể cập nhật thứ tự hiển thị thư mục",
+    "cannotMoveAboveDefault": "Không thể di chuyển thư mục lên trên thư mục mặc định",
+    "lessons": "bài học"
   },
   "lessonForm": {
     "createLesson": "Tạo bài học",

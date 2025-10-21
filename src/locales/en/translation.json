@@ -182,7 +182,9 @@
     "hint": "Hint",
     "dragDropHint": "You can drag and drop folders to reorder them (except the Default folder)",
     "reorderSuccess": "Folder order updated successfully",
-    "reorderError": "Failed to update folder order"
+    "reorderError": "Failed to update folder order",
+    "cannotMoveAboveDefault": "Cannot move folder above the default folder",
+    "lessons": "lessons"
   },
   "lessonForm": {
     "createLesson": "Create Lesson",
