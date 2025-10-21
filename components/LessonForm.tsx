@@ -159,7 +159,7 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
                 ) : (
                   folders.map((folder) => (
                     <option key={folder.id} value={folder.id}>
-                      {folder.name}
+                      {folder.name.startsWith('folderManagement.') ? t(folder.name) : folder.name}
                     </option>
                   ))
                 )}

@@ -161,7 +161,7 @@ const LessonManagement: React.FC = () => {
             {t('lessonManagement.backToFolders')}
           </Button>
           <h2 className="text-2xl font-bold text-teal-400">
-            {currentFolder?.name}
+            {currentFolder ? (currentFolder.name.startsWith('folderManagement.') ? t(currentFolder.name) : currentFolder.name) : ''}
           </h2>
         </div>
         <Button onClick={() => setIsFormOpen(true)} variant="primary">

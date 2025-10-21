@@ -57,7 +57,7 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
 
   const handleEdit = (folder: Folder) => {
     setEditingFolder(folder);
-    setEditingName(folder.name);
+    setEditingName(folder.name.startsWith('folderManagement.') ? t(folder.name) : folder.name);
   };
 
   const handleCancelEdit = () => {
@@ -103,7 +103,8 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
       return;
     }
 
-    if (!window.confirm(t('folderManagement.deleteConfirm', { name: folder.name }))) {
+    const displayName = folder.name.startsWith('folderManagement.') ? t(folder.name) : folder.name;
+    if (!window.confirm(t('folderManagement.deleteConfirm', { name: displayName }))) {
       return;
     }
 
@@ -356,11 +357,8 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
                     <div className="flex-grow">
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg font-semibold text-white group-hover:text-teal-400 transition-colors">
-                          {folder.name}
+                          {folder.name.startsWith('folderManagement.') ? t(folder.name) : folder.name}
                         </h3>
-                        {folder.isDefault && (
-                          <span className="text-xs text-gray-500">({t('folderManagement.default')})</span>
-                        )}
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-teal-400/20 text-teal-300 border border-teal-400/30">
                           {lessonCounts[folder.id] || 0} {t('folderManagement.lessons')}
                         </span>

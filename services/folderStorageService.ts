@@ -40,6 +40,25 @@ class LocalStorageFolderService implements FolderStorage {
         };
       });
 
+      // Migration: normalize default folder's name to i18n key
+      const defaultByIdIndex = parsedFolders.findIndex((f: Folder) => f.id === this.DEFAULT_FOLDER_ID);
+      if (defaultByIdIndex !== -1) {
+        const defaultFolder = parsedFolders[defaultByIdIndex];
+        let updated = false;
+        if (defaultFolder.name !== 'folderManagement.default') {
+          defaultFolder.name = 'folderManagement.default';
+          updated = true;
+        }
+        if (!defaultFolder.isDefault) {
+          defaultFolder.isDefault = true;
+          updated = true;
+        }
+        if (updated) {
+          defaultFolder.updatedAt = new Date();
+          needsMigration = true;
+        }
+      }
+
       // Ensure default folder exists
       if (!parsedFolders.find((f: Folder) => f.id === this.DEFAULT_FOLDER_ID)) {
         const defaultFolder = this.createDefaultFolder();
@@ -68,7 +87,7 @@ class LocalStorageFolderService implements FolderStorage {
   private createDefaultFolder(): Folder {
     return {
       id: this.DEFAULT_FOLDER_ID,
-      name: 'Mặc định',
+      name: 'folderManagement.default', // Translation key instead of hardcoded text
       displayOrder: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
