@@ -156,7 +156,7 @@
     "updateSuccess": "Lesson updated successfully",
     "currentLesson": "Current lesson",
     "backToLessons": "Back to lessons",
-    "backToLessonsShort": "Back",
+    "backToLessonsShort": "List",
     "editLesson": "Edit lesson"
   },
   "lessonForm": {

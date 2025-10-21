@@ -58,34 +58,44 @@ const TextInputArea: React.FC<TextInputAreaProps> = ({
 
   return (
     <Card className={`flex flex-col ${isInputVisible ? 'flex-grow' : ''}`}>
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-white">{getTitle()}</h2>
-          {currentLesson && onBackToLessons && (
-            <Button
-              onClick={onBackToLessons}
-              variant="secondary"
-              className="flex items-center gap-2 text-base font-semibold px-4 py-2"
-            >
-              <ArrowLeftIcon className="w-4 h-4" />
-              {t('lessonManagement.backToLessonsShort')}
-            </Button>
-          )}
-          {currentLesson && onEditLesson && (
-            <Button
-              onClick={() => onEditLesson(currentLesson)}
-              variant="ghost"
-              className="flex items-center gap-2 text-sm px-3 py-2"
-            >
-              <PencilIcon className="w-4 h-4" />
-              {t('lessonManagement.editLesson')}
-            </Button>
-          )}
+      <div className="mb-3">
+        {/* Header with title and toggle */}
+        <div className="flex justify-between items-start gap-3 mb-3">
+          <h2 className="text-xl font-bold text-white flex-1 break-words">{getTitle()}</h2>
+          <button 
+            onClick={() => setIsInputVisible(!isInputVisible)} 
+            className="flex items-center text-gray-400 hover:text-white flex-shrink-0"
+          >
+            <span className="text-sm mr-1">{isInputVisible ? t('textInput.hide') : t('textInput.show')}</span>
+            {isInputVisible ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+          </button>
         </div>
-        <button onClick={() => setIsInputVisible(!isInputVisible)} className="flex items-center text-gray-400 hover:text-white">
-          <span className="text-sm mr-1">{isInputVisible ? t('textInput.hide') : t('textInput.show')}</span>
-          {isInputVisible ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
-        </button>
+        
+        {/* Action buttons */}
+        {currentLesson && (onBackToLessons || onEditLesson) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {onBackToLessons && (
+              <Button
+                onClick={onBackToLessons}
+                variant="secondary"
+                className="flex items-center gap-2 text-base font-semibold px-4 py-2"
+              >
+                <ArrowLeftIcon className="w-4 h-4" />
+                {t('lessonManagement.backToLessonsShort')}
+              </Button>
+            )}
+            {onEditLesson && (
+              <Button
+                onClick={() => onEditLesson(currentLesson)}
+                variant="ghost"
+                className="flex items-center gap-2 text-sm px-3 py-2"
+              >
+                <PencilIcon className="w-4 h-4" />
+                {t('lessonManagement.editLesson')}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       {isInputVisible && (
         <>
