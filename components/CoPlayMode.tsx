@@ -403,7 +403,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
             <div className="space-y-4">
               <div className="border-b border-gray-700 pb-4">
                 <h3 className="text-lg font-semibold text-gray-300 mb-3">{t('coPlay.sentenceRange')}</h3>
-                <div className="flex items-center gap-4">
+                <div className="flex items-end gap-2">
                   <div>
                     <label htmlFor="start-sentence" className="block text-gray-300 mb-1 text-sm">{t('coPlay.fromSentence')}</label>
                     <input
@@ -416,7 +416,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                       className="w-20 bg-gray-800 border border-gray-600 rounded p-2"
                     />
                   </div>
-                  <div className="text-gray-400 py-2">to</div>
+                  <div className="text-gray-400 pb-1">{t('coPlay.to')}</div>
                   <div>
                     <label htmlFor="end-sentence" className="block text-gray-300 mb-1 text-sm">{t('coPlay.toSentence')}</label>
                     <input
@@ -429,8 +429,8 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                       className="w-20 bg-gray-800 border border-gray-600 rounded p-2"
                     />
                   </div>
-                  <div className="text-sm text-gray-400 py-2">
-                    {t('coPlay.totalSentences', { total: totalSentences })}
+                  <div className="text-sm text-gray-400 pb-1">
+                    ({t('coPlay.totalSentences', { total: totalSentences })})
                   </div>
                 </div>
               </div>

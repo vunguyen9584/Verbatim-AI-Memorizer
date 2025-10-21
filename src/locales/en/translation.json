@@ -16,6 +16,7 @@
     "sentenceRange": "Sentence Range",
     "fromSentence": "From",
     "toSentence": "To",
+    "to": "to",
     "totalSentences": "Total: {{total}} sentences",
     "appSentences": "App Sentences:",
     "allSentences": "All sentences",
