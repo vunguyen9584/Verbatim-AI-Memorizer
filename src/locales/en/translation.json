@@ -209,5 +209,26 @@
   },
   "toast": {
     "close": "Close notification"
+  },
+  "firebaseDiag": {
+    "title": "Firebase Diagnostics",
+    "description": "Run checks to validate your Firebase configuration and connectivity.",
+    "close": "Close",
+    "running": "Running...",
+    "runChecks": "Run Checks",
+    "envVars": "Environment variables present",
+    "envOk": "All required VITE_FIREBASE_* env vars are set.",
+    "envMissing": "Missing required env vars",
+    "appInit": "Initialize Firebase App",
+    "appNull": "Firebase app is null (likely missing envs).",
+    "authInit": "Initialize Auth",
+    "authNull": "Auth not available.",
+    "firestoreInit": "Initialize Firestore",
+    "firestoreNull": "Firestore not available.",
+    "firestoreWrite": "Firestore write test",
+    "writeOk": "Write succeeded.",
+    "firestoreRead": "Firestore read test",
+    "readOk": "Read succeeded.",
+    "readMissing": "Document not found after write."
   }
 }

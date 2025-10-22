@@ -10,11 +10,12 @@ import CoPlayMode from './components/CoPlayMode';
 import MemorizeTipsMode from './components/MemorizeTipsMode';
 import LessonManagement from './components/LessonManagement';
 import LessonForm from './components/LessonForm';
-import { BrainCircuitIcon, BugIcon } from './components/common/Icon';
+import { BrainCircuitIcon, BugIcon, CloudIcon } from './components/common/Icon';
 import DebugPanel from './components/DebugPanel';
 import { ToastProvider, useToast } from './components/common/Toast';
 import { lessonStorageService } from './services/lessonStorageService';
 import SyncStatus from './components/common/SyncStatus';
+import FirebaseDiagnostics from './components/FirebaseDiagnostics';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -22,6 +23,7 @@ const AppContent: React.FC = () => {
   const [text, setText] = useState<string>('');
   const [mode, setMode] = useState<LearningMode | null>(null);
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
+  const [isFirebaseDiagOpen, setIsFirebaseDiagOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'learning' | 'lessons'>('lessons');
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
@@ -141,6 +143,9 @@ const AppContent: React.FC = () => {
             <SyncStatus />
             <button onClick={() => changeLanguage('en')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>EN</button>
             <button onClick={() => changeLanguage('vi')} className={`px-2 py-1 text-sm rounded ml-2 ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>VI</button>
+            <button onClick={() => setIsFirebaseDiagOpen(true)} className="text-gray-500 hover:text-teal-400 transition-colors ml-2" aria-label={t('firebaseDiag.title')}>
+              <CloudIcon className="w-6 h-6" />
+            </button>
             <button onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)} className="text-gray-500 hover:text-teal-400 transition-colors ml-4" aria-label={t('openDebugPanel')}>
               <BugIcon className="w-6 h-6" />
             </button>
@@ -175,6 +180,7 @@ const AppContent: React.FC = () => {
       </main>
 
       <DebugPanel isOpen={isDebugPanelOpen} onClose={() => setIsDebugPanelOpen(false)} />
+      <FirebaseDiagnostics isOpen={isFirebaseDiagOpen} onClose={() => setIsFirebaseDiagOpen(false)} />
       
       {isEditFormOpen && (
         <LessonForm

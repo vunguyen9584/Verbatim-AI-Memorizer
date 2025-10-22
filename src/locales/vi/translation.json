@@ -209,5 +209,26 @@
   },
   "toast": {
     "close": "Đóng thông báo"
+  },
+  "firebaseDiag": {
+    "title": "Chẩn đoán Firebase",
+    "description": "Chạy các kiểm tra để xác thực cấu hình và kết nối Firebase của bạn.",
+    "close": "Đóng",
+    "running": "Đang chạy...",
+    "runChecks": "Chạy kiểm tra",
+    "envVars": "Biến môi trường",
+    "envOk": "Tất cả biến môi trường VITE_FIREBASE_* đã được đặt.",
+    "envMissing": "Thiếu biến môi trường bắt buộc",
+    "appInit": "Khởi tạo Firebase App",
+    "appNull": "Firebase app là null (có thể thiếu biến môi trường).",
+    "authInit": "Khởi tạo Auth",
+    "authNull": "Auth không khả dụng.",
+    "firestoreInit": "Khởi tạo Firestore",
+    "firestoreNull": "Firestore không khả dụng.",
+    "firestoreWrite": "Kiểm tra ghi Firestore",
+    "writeOk": "Ghi thành công.",
+    "firestoreRead": "Kiểm tra đọc Firestore",
+    "readOk": "Đọc thành công.",
+    "readMissing": "Không tìm thấy tài liệu sau khi ghi."
   }
 }
