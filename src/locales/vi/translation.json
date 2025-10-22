@@ -243,6 +243,22 @@
       "genericError": "Không thể gửi liên kết đăng nhập qua email."
     }
   },
+  "authGate": {
+    "title": "Đăng nhập để tiếp tục",
+    "googleTab": "Tiếp tục với Google",
+    "emailTab": "Đăng ký bằng Email",
+    "googleDescription": "Sử dụng tài khoản Google để đăng nhập ngay.",
+    "continueWithGoogle": "Tiếp tục với Google",
+    "firstName": "Tên",
+    "lastName": "Họ",
+    "dateOfBirth": "Ngày sinh",
+    "email": "Email",
+    "sendActivationLink": "Gửi liên kết kích hoạt",
+    "sending": "Đang gửi...",
+    "emailLinkHelp": "Chúng tôi sẽ gửi một liên kết đăng nhập an toàn đến email của bạn. Mở liên kết để hoàn tất đăng nhập.",
+    "validationRequired": "Vui lòng điền đầy đủ các trường.",
+    "genericError": "Đã xảy ra lỗi. Vui lòng thử lại."
+  },
   "sync": {
     "viewingCloud": "Đang xem dữ liệu trên Cloud (chỉ đọc)"
   }

@@ -243,6 +243,22 @@
       "genericError": "Could not send email sign-in link."
     }
   },
+  "authGate": {
+    "title": "Sign in to continue",
+    "googleTab": "Continue with Google",
+    "emailTab": "Sign up with Email",
+    "googleDescription": "Use your Google account to sign in instantly.",
+    "continueWithGoogle": "Continue with Google",
+    "firstName": "First name",
+    "lastName": "Surname",
+    "dateOfBirth": "Date of birth",
+    "email": "Email",
+    "sendActivationLink": "Send activation link",
+    "sending": "Sending...",
+    "emailLinkHelp": "We'll send a secure sign-in link to your email. Open it to complete sign-in.",
+    "validationRequired": "Please fill all fields.",
+    "genericError": "Something went wrong. Please try again."
+  },
   "sync": {
     "viewingCloud": "Viewing Cloud data (read-only)"
   }

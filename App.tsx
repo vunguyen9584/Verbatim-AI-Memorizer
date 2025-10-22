@@ -16,10 +16,14 @@ import { ToastProvider, useToast } from './components/common/Toast';
 import { lessonStorageService } from './services/lessonStorageService';
 import SyncStatus from './components/common/SyncStatus';
 import FirebaseDiagnostics from './components/FirebaseDiagnostics';
+import AuthGate from './components/auth/AuthGate';
+import { authService } from './services/authService';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
+  const [authUser, setAuthUser] = useState(() => authService.getUser());
+  const [authReady, setAuthReady] = useState(false);
   const [text, setText] = useState<string>('');
   const [mode, setMode] = useState<LearningMode | null>(null);
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
@@ -28,6 +32,16 @@ const AppContent: React.FC = () => {
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+
+  useEffect(() => {
+    authService.init();
+    let first = true;
+    const off = authService.onChange((u) => {
+      setAuthUser(u);
+      if (first) { first = false; setAuthReady(true); }
+    });
+    return () => { off(); };
+  }, []);
 
   useEffect(() => {
     const handleStartLearning = (event: CustomEvent) => {
@@ -130,6 +144,11 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
+        {!authReady ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80">
+            <div className="text-gray-300">{t('loader.thinking')}</div>
+          </div>
+        ) : (!authUser && <AuthGate />)}
         <header className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />

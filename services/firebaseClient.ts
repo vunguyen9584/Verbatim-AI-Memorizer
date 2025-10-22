@@ -4,10 +4,14 @@ import {
   onAuthStateChanged as fbOnAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   isSignInWithEmailLink,
   sendSignInLinkToEmail,
   signInWithEmailLink,
-  signOut as fbSignOut
+  signOut as fbSignOut,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -52,20 +56,50 @@ export function getDb() {
 
 export function getAuthInstance() {
   const app = getFirebaseApp();
-  return app ? getAuth(app) : null;
+  if (!app) return null;
+  const auth = getAuth(app);
+  // Ensure stable local persistence once
+  try {
+    // setPersistence is idempotent for the same mode; ignore errors
+    void setPersistence(auth, browserLocalPersistence);
+    // optional: use device language
+    (auth as any).useDeviceLanguage?.();
+    // Avoid automatic redirect handling interfering with SPA state; we call getRedirectResult manually
+    (auth as any).skipNavigation = true;
+  } catch {}
+  return auth;
 }
 
 export const authHelpers = {
-  onAuthStateChanged(cb: (user: { uid: string; email: string | null } | null) => void) {
+  onAuthStateChanged(cb: (user: { uid: string; email: string | null; providerId?: string } | null) => void) {
     const auth = getAuthInstance();
     if (!auth) return () => {};
-    return fbOnAuthStateChanged(auth, (user) => cb(user ? { uid: user.uid, email: user.email } : null));
+    return fbOnAuthStateChanged(auth, (user) => {
+      if (!user) return cb(null);
+      const providerId = user.providerData?.[0]?.providerId || undefined;
+      cb({ uid: user.uid, email: user.email, providerId });
+    });
   },
   async signInWithGoogle() {
     const auth = getAuthInstance();
     if (!auth) throw new Error('Firebase not configured');
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    const preferPopup = ((import.meta as any).env?.VITE_AUTH_GOOGLE_POPUP === 'true');
+    if (preferPopup) {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (e: any) {
+        const code = e?.code || e?.message || '';
+        const popupIssues = typeof code === 'string' && (code.includes('popup') || code.includes('blocked') || code.includes('cancelled') || code.includes('canceled'));
+        if (popupIssues) {
+          await signInWithRedirect(auth, provider);
+          return;
+        }
+        throw e;
+      }
+    } else {
+      await signInWithRedirect(auth, provider);
+    }
   },
   async sendEmailLink(email: string) {
     const auth = getAuthInstance();
@@ -80,6 +114,8 @@ export const authHelpers = {
   async completeEmailLinkSignIn() {
     const auth = getAuthInstance();
     if (!auth) return;
+    // finalize redirect login if popup was blocked
+    try { await getRedirectResult(auth); } catch {}
     if (isSignInWithEmailLink(auth, window.location.href)) {
       let email = window.localStorage.getItem('verbatim_email_for_signin');
       if (!email) {

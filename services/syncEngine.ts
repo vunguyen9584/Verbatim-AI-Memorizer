@@ -25,7 +25,7 @@ class SimpleSyncEngine implements SyncEngineAPI {
       this.setStatus('disabled');
       return;
     }
-    authService.init();
+    // Auth is initialized in App.tsx to avoid double initialization.
     authService.onChange(async (user) => {
       if (!user) {
         console.log('[SyncEngine] User logged out');
