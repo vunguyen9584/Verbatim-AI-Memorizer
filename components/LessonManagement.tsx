@@ -4,6 +4,7 @@ import { Lesson, Folder } from '../types';
 // Use composite services to enqueue sync operations
 import { compositeLessonStorage as lessonStorageService } from '../services/compositeStorageService';
 import { compositeFolderStorage as folderStorageService } from '../services/compositeStorageService';
+import { dataViewService } from '../services/dataViewService';
 import { useToast } from './common/Toast';
 import Card from './common/Card';
 import Button from './common/Button';
@@ -19,6 +20,7 @@ const LessonManagement: React.FC = () => {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
+  const [isCloudView, setIsCloudView] = useState<boolean>(dataViewService.getCurrentView() === 'cloud');
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
 
   const loadLessons = useCallback(async (folderId?: string) => {
@@ -27,8 +29,9 @@ const LessonManagement: React.FC = () => {
       let allLessons: Lesson[];
       
       if (folderId) {
-        allLessons = await lessonStorageService.getLessonsByFolder(folderId);
+        allLessons = await dataViewService.getLessonsByFolder(folderId);
       } else {
+        // No global list in cloud view; fallback to all local lessons when no folder selected
         allLessons = await lessonStorageService.getAllLessons();
       }
       
@@ -51,9 +54,19 @@ const LessonManagement: React.FC = () => {
     }
   }, [selectedFolder, loadLessons]);
 
+  useEffect(() => {
+    const off = dataViewService.onViewChange((mode) => {
+      setIsCloudView(mode === 'cloud');
+      if (selectedFolder) {
+        loadLessons(selectedFolder.id);
+      }
+    });
+    return () => off();
+  }, [selectedFolder, loadLessons]);
+
   const handleFolderSelect = async (folderId: string) => {
     try {
-      const folder = await folderStorageService.getFolder(folderId);
+      const folder = await dataViewService.getFolder(folderId);
       if (folder) {
         setSelectedFolder(folder);
         setCurrentFolder(folder);

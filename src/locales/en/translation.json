@@ -184,7 +184,9 @@
     "reorderSuccess": "Folder order updated successfully",
     "reorderError": "Failed to update folder order",
     "cannotMoveAboveDefault": "Cannot move folder above the default folder",
-    "lessons": "lessons"
+    "lessons": "lessons",
+    "noFolders": "No folders yet",
+    "createFirstFolder": "Sign in to sync your data or create a new folder to get started"
   },
   "lessonForm": {
     "createLesson": "Create Lesson",
@@ -240,5 +242,8 @@
       "networkRequestFailed": "Network error. Check your connection and try again.",
       "genericError": "Could not send email sign-in link."
     }
+  },
+  "sync": {
+    "viewingCloud": "Viewing Cloud data (read-only)"
   }
 }

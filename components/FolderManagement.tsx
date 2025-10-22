@@ -4,6 +4,7 @@ import { Folder } from '../types';
 import { compositeFolderStorage as folderStorageService } from '../services/compositeStorageService';
 import { compositeLessonStorage as lessonStorageService } from '../services/compositeStorageService';
 import { useToast } from './common/Toast';
+import { dataViewService } from '../services/dataViewService';
 import Card from './common/Card';
 import Button from './common/Button';
 import { EditIcon, TrashIcon, FolderIcon, ChevronRightIcon } from './common/Icon';
@@ -24,18 +25,19 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
   const [draggedFolder, setDraggedFolder] = useState<Folder | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<Folder | null>(null);
   const [lessonCounts, setLessonCounts] = useState<Record<string, number>>({});
+  const [isCloudView, setIsCloudView] = useState<boolean>(dataViewService.getCurrentView() === 'cloud');
 
   const loadFolders = useCallback(async () => {
     try {
       setIsLoading(true);
-      const allFolders = await folderStorageService.getAllFolders();
+      const allFolders = await dataViewService.getAllFolders();
       // Folders are already sorted by displayOrder in the service
       setFolders(allFolders);
       
       // Load lesson counts for each folder
       const counts: Record<string, number> = {};
       for (const folder of allFolders) {
-        const lessons = await lessonStorageService.getLessonsByFolder(folder.id);
+        const lessons = await dataViewService.getLessonsByFolder(folder.id);
         counts[folder.id] = lessons.length;
       }
       setLessonCounts(counts);
@@ -53,6 +55,11 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
 
   useEffect(() => {
     loadFolders();
+    const off = dataViewService.onViewChange((mode) => {
+      setIsCloudView(mode === 'cloud');
+      loadFolders();
+    });
+    return () => off();
   }, [loadFolders]);
 
   const handleEdit = (folder: Folder) => {
@@ -275,6 +282,7 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
         </p>
       </div>
 
+
       {isCreating && (
         <Card className="mb-4 bg-gray-700/50">
           <div className="flex gap-2 items-center">
@@ -302,7 +310,13 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
       )}
 
       <div className="space-y-4 overflow-y-auto flex-grow">
-        {folders.map((folder) => (
+        {folders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center py-12">
+            <p className="text-gray-400 text-lg mb-4">{t('folderManagement.noFolders')}</p>
+            <p className="text-gray-500 text-sm">{t('folderManagement.createFirstFolder')}</p>
+          </div>
+        ) : (
+          folders.map((folder) => (
           <div
             key={folder.id}
             draggable={!folder.isDefault && editingFolder?.id !== folder.id}
@@ -399,7 +413,8 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
               )}
             </Card>
           </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

@@ -147,6 +147,7 @@ export interface LessonStorage {
   getLesson: (id: string) => Promise<Lesson | null>;
   getAllLessons: () => Promise<Lesson[]>;
   getLessonsByFolder: (folderId: string) => Promise<Lesson[]>;
+  clearAll: () => Promise<void>;
 }
 
 export interface FolderStorage {
@@ -158,6 +159,7 @@ export interface FolderStorage {
   getAllFolders: () => Promise<Folder[]>;
   getDefaultFolder: () => Promise<Folder>;
   reorderFolders: (folderIds: string[]) => Promise<void>;
+  clearAll: () => Promise<void>;
 }
 
 export interface ToastMessage {

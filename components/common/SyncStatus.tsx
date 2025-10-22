@@ -4,6 +4,8 @@ import { syncEngine } from '../../services/syncEngine';
 import { authService } from '../../services/authService';
 import { useToast } from './Toast';
 import { useTranslation } from 'react-i18next';
+import { exportImportService } from '../../services/exportImportService';
+import { dataViewService } from '../../services/dataViewService';
 
 const dotClass: Record<SyncStatusType, string> = {
   idle: 'bg-teal-400',
@@ -26,11 +28,13 @@ const SyncStatus: React.FC = () => {
   const [email, setEmail] = useState('');
   const { showToast } = useToast();
   const { t } = useTranslation();
+  const [isCloudView, setIsCloudView] = useState(dataViewService.getCurrentView() === 'cloud');
 
   useEffect(() => {
     const off = syncEngine.onStatusChange(setStatus);
     syncEngine.start();
-    return () => off();
+    const offView = dataViewService.onViewChange((mode) => setIsCloudView(mode === 'cloud'));
+    return () => { off(); offView(); };
   }, []);
 
   const mapEmailLinkError = (err: any): string => {
@@ -47,7 +51,7 @@ const SyncStatus: React.FC = () => {
   return (
     <div className="flex items-center gap-3 text-sm text-gray-300">
       <span className={`inline-block w-2 h-2 rounded-full ${dotClass[status]}`} />
-      <span>{label[status]}</span>
+      <span>{label[status]}{isCloudView ? ' · Cloud' : ' · Local'}</span>
       {status === 'unauthenticated' && (
         <div className="flex items-center gap-2">
           <button
@@ -85,6 +89,42 @@ const SyncStatus: React.FC = () => {
       {status !== 'unauthenticated' && (
         <button className="px-2 py-1 bg-gray-700 rounded" onClick={() => authService.signOut()}>Sign out</button>
       )}
+      <button
+        className="px-2 py-1 bg-gray-700 rounded"
+        onClick={async () => {
+          try {
+            const blob = await exportImportService.exportAll();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `verbatim-export-${new Date().toISOString().slice(0,19)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+          } catch (e: any) {
+            showToast({ type: 'error', message: e?.message || 'Export failed', persistent: true });
+          }
+        }}
+      >Export</button>
+      <label className="px-2 py-1 bg-gray-700 rounded cursor-pointer">
+        Import
+        <input
+          type="file"
+          accept="application/json"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              const res = await exportImportService.importAll(file);
+              showToast({ type: 'success', message: `Imported ${res.folders} folders, ${res.lessons} lessons` });
+            } catch (err: any) {
+              showToast({ type: 'error', message: err?.message || 'Import failed', persistent: true });
+            } finally {
+              e.currentTarget.value = '';
+            }
+          }}
+        />
+      </label>
     </div>
   );
 };

@@ -37,6 +37,7 @@ class CompositeLessonStorage implements LessonStorage {
   async getLesson(id: string): Promise<Lesson | null> { return localLesson.getLesson(id); }
   async getAllLessons(): Promise<Lesson[]> { return localLesson.getAllLessons(); }
   async getLessonsByFolder(folderId: string): Promise<Lesson[]> { return localLesson.getLessonsByFolder(folderId); }
+  async clearAll(): Promise<void> { return localLesson.clearAll(); }
 }
 
 class CompositeFolderStorage implements FolderStorage {
@@ -67,9 +68,14 @@ class CompositeFolderStorage implements FolderStorage {
   async getDefaultFolder(): Promise<Folder> { return localFolder.getDefaultFolder(); }
   async reorderFolders(folderIds: string[]): Promise<void> {
     await localFolder.reorderFolders(folderIds);
-    const op: PendingOp = { id: createOpId(), op: 'upsert', entity: 'folder', payload: { reorder: folderIds }, ts: Date.now() } as any;
-    syncEngine.enqueue(op);
+    // Enqueue each folder that was reordered to sync the new displayOrder
+    const folders = await localFolder.getAllFolders();
+    for (const folder of folders) {
+      const op: PendingOp = { id: createOpId(), op: 'upsert', entity: 'folder', payload: folder, localId: folder.id, ts: Date.now() };
+      syncEngine.enqueue(op);
+    }
   }
+  async clearAll(): Promise<void> { return localFolder.clearAll(); }
 }
 
 export const compositeLessonStorage: LessonStorage = new CompositeLessonStorage();

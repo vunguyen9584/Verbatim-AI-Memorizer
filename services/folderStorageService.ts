@@ -12,10 +12,9 @@ class LocalStorageFolderService implements FolderStorage {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (!stored) {
-        // Initialize with default folder
-        const defaultFolder = this.createDefaultFolder();
-        this.saveToStorage([defaultFolder]);
-        return [defaultFolder];
+        // Return empty array instead of auto-creating default folder
+        // Default folder will be created on-demand when needed
+        return [];
       }
       
       const folders = JSON.parse(stored);
@@ -175,18 +174,21 @@ class LocalStorageFolderService implements FolderStorage {
   }
 
   async getAllFolders(): Promise<Folder[]> {
-    return this.getStoredFolders();
+    const folders = this.getStoredFolders();
+    // Don't auto-create default folder if empty (e.g., after logout)
+    // Default folder will be created when actually needed
+    return folders;
   }
 
   async getDefaultFolder(): Promise<Folder> {
     const folders = this.getStoredFolders();
-    const defaultFolder = folders.find(f => f.id === this.DEFAULT_FOLDER_ID);
+    let defaultFolder = folders.find(f => f.id === this.DEFAULT_FOLDER_ID);
     
     if (!defaultFolder) {
-      const newDefaultFolder = this.createDefaultFolder();
-      folders.unshift(newDefaultFolder);
+      // Create default folder on-demand (e.g., when saving a lesson)
+      defaultFolder = this.createDefaultFolder();
+      folders.unshift(defaultFolder);
       this.saveToStorage(folders);
-      return newDefaultFolder;
     }
     
     return defaultFolder;
@@ -215,6 +217,16 @@ class LocalStorageFolderService implements FolderStorage {
 
   get folders(): Folder[] {
     return this.getStoredFolders();
+  }
+
+  async clearAll(): Promise<void> {
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+      console.log('[FolderStorage] All folders cleared from local storage');
+    } catch (error) {
+      console.error('Error clearing folders from storage:', error);
+      throw new Error('Failed to clear folders from storage');
+    }
   }
 }
 

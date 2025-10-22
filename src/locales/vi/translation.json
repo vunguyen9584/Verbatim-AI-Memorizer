@@ -184,7 +184,9 @@
     "reorderSuccess": "Đã cập nhật thứ tự hiển thị thư mục",
     "reorderError": "Không thể cập nhật thứ tự hiển thị thư mục",
     "cannotMoveAboveDefault": "Không thể di chuyển thư mục lên trên thư mục mặc định",
-    "lessons": "bài học"
+    "lessons": "bài học",
+    "noFolders": "Chưa có thư mục nào",
+    "createFirstFolder": "Đăng nhập để đồng bộ dữ liệu hoặc tạo thư mục mới để bắt đầu"
   },
   "lessonForm": {
     "createLesson": "Tạo bài học",
@@ -240,5 +242,8 @@
       "networkRequestFailed": "Lỗi mạng. Kiểm tra kết nối và thử lại.",
       "genericError": "Không thể gửi liên kết đăng nhập qua email."
     }
+  },
+  "sync": {
+    "viewingCloud": "Đang xem dữ liệu trên Cloud (chỉ đọc)"
   }
 }

@@ -119,6 +119,16 @@ class LocalStorageLessonService implements LessonStorage {
   get lessons(): Lesson[] {
     return this.getStoredLessons();
   }
+
+  async clearAll(): Promise<void> {
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+      console.log('[LessonStorage] All lessons cleared from local storage');
+    } catch (error) {
+      console.error('Error clearing lessons from storage:', error);
+      throw new Error('Failed to clear lessons from storage');
+    }
+  }
 }
 
 export const lessonStorageService = new LocalStorageLessonService();

@@ -1,14 +1,13 @@
 # Cross-Device Sync Design — Verbatim AI Memorizer
 
 ## Summary
-Add optional, account-based cloud sync so a user’s lessons and folders stay consistent across devices while the app remains fully usable offline. The design is offline-first, uses the existing storage interfaces, resolves conflicts deterministically, and supports gradual rollout.
+Cloud data is now view-only by default. After login, the app loads and displays cloud data without automatically uploading any local data. Local data remains separate and is shown after logout. Users can explicitly export/import to control what gets synchronized.
 
 ## Goals
-- Optional sign-in; anonymous users continue using local data.
-- Seamless two-way sync of Folders and Lessons across devices.
-- Offline-first UX: local changes work instantly and sync later.
-- Deterministic conflict resolution without data loss for common cases.
-- Simple migration from current LocalStorage keys: `verbatim_folders`, `verbatim_lessons`.
+- Optional sign-in; anonymous users continue using local data (Local view).
+- On login: load cloud data for viewing (Cloud view), do not auto-push local changes.
+- Offline-first local editing remains available in Local view.
+- User-controlled data movement via Export/Import.
 
 ## Non-Goals
 - Full collaborative editing or CRDTs.
@@ -21,12 +20,13 @@ Add optional, account-based cloud sync so a user’s lessons and folders stay co
   - `LocalStorageLessonService` → key `verbatim_lessons`
 - Types (from `types.ts`): `Folder` and `Lesson` have `id`, `createdAt`, `updatedAt`; `Folder` also has `displayOrder`, `isDefault`.
 
-## Current Implementation (v1)
-- Backend: Firebase Firestore via a `CloudAdapter` implementation (`cloudAdapterFirebase`). Feature-flagged by `VITE_SYNC_ENABLED`.
-- Auth: required for sync; when not signed in, status is `unauthenticated`.
-- Offline-first writes: Local writes happen immediately via local storage services; a `Composite` storage layer enqueues a pending op for each change into LocalStorage key `verbatim_pending_ops`.
-- Flush to cloud: A background timer (every ~10s) triggers sync. The engine batches pending ops into upserts (and tombstones for deletes) and calls `upsertFolders`/`upsertLessons` on the adapter. On success, the queue is cleared and status returns to `idle`.
-- Remote to local: Firestore realtime subscriptions (`onSnapshot`) per user stream rows. The engine applies LWW (by comparing remote `updated_at` vs local `updatedAt`) and applies tombstones for deletes.
+## Current Implementation (v2)
+- Backend: Firebase Firestore via `cloudAdapterFirebase`. Feature-flagged by `VITE_SYNC_ENABLED`.
+- Auth: when not signed in, status is `unauthenticated` and the UI shows Local view.
+- Writes Queue: Composite storage still enqueues local pending ops, but the engine no longer auto-uploads.
+- No Auto Flush: Background upload timer is disabled. Uploads are user-initiated via Export/Import only.
+- Cloud Cache: On login, realtime subscriptions populate a per-user Cloud cache in LocalStorage: `verbatim_cloud_<user>_folders`, `verbatim_cloud_<user>_lessons`.
+- Data View: UI reads from a `dataViewService` that chooses Local vs Cloud cache based on auth state. Cloud view is read-only in the UI.
 - Status model exposed to UI: `disabled | unauthenticated | syncing | idle | error`. UI component `SyncStatus` subscribes to status changes and calls `syncEngine.start()`.
 
 Important: A cursor-based pull (`lastSyncedAt`) is not used yet; the code defines a key but does not read/write it. ID mapping between local IDs and server UUIDs is not implemented; upserts currently rely on optional `serverId` that is not persisted in local types.
@@ -109,25 +109,26 @@ create table lessons (
    - Replace direct uses of `lessonStorageService`/`folderStorageService` with a composite service that delegates to Local first and enqueues ops for Sync.
    - Reads: always from Local for instant UX; remote pulls overlay into Local.
 
-## Sync Flows
-1) First Sign-In (Migration)
-   - Read all local folders/lessons; create a default folder remotely if none exists.
-   - Upload local items as upserts; record server IDs in `sync_id_map`.
-   - Set `lastSyncedAt` to server-time; start steady-state sync.
+## Data Flows
+1) Login
+   - Start realtime listeners; populate Cloud cache.
+   - UI switches to Cloud view (read-only).
 
-2) Steady-State
-   - On local create/update/delete: write to Local immediately; enqueue to `pendingOps`.
-   - Background timer flushes queue; server stamps `updated_at`.
-   - Remote changes arrive via realtime subscription; merge by LWW and apply tombstones.
+2) Logout
+   - UI switches to Local view. Local and Cloud data remain separate.
+
+3) Export/Import
+   - Export: bundle all Local folders/lessons to a JSON file.
+   - Import: load a JSON bundle into Local storage (merge by id where feasible).
 
 3) Conflict Rules (LWW)
    - If both sides changed the same record: keep the one with greater `updated_at` (server-time). If equal, prefer server.
    - Deletes win: if remote has `deleted_at`, delete locally even if local has older updates.
 
-## Minimal Client Changes
-- Add a small Sync Status indicator.
-- Add Auth button(s).
-- Keep current LocalStorage schema; add lightweight `sync_id_map`, `pending_ops`, `last_synced_at` keys.
+## Client Changes
+- Sync Status gains Export/Import controls and shows current view (Local/Cloud).
+- New `dataViewService` to source data for listings.
+- `syncEngine` only fills Cloud cache; no local writes from remote.
 
 ## API Contract (Supabase Client Sketch)
 - Folders:
