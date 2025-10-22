@@ -230,5 +230,15 @@
     "firestoreRead": "Firestore read test",
     "readOk": "Read succeeded.",
     "readMissing": "Document not found after write."
+  },
+  "auth": {
+    "emailLink": {
+      "sent": "Sign-in link sent. Check your email.",
+      "operationNotAllowed": "Email link sign-in is disabled. Enable Email/Password and Email link (passwordless) in Firebase Console → Authentication → Sign-in method.",
+      "invalidEmail": "Invalid email address.",
+      "tooManyRequests": "Too many requests. Please try again later.",
+      "networkRequestFailed": "Network error. Check your connection and try again.",
+      "genericError": "Could not send email sign-in link."
+    }
   }
 }

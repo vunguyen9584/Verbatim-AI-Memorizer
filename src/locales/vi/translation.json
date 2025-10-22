@@ -230,5 +230,15 @@
     "firestoreRead": "Kiểm tra đọc Firestore",
     "readOk": "Đọc thành công.",
     "readMissing": "Không tìm thấy tài liệu sau khi ghi."
+  },
+  "auth": {
+    "emailLink": {
+      "sent": "Đã gửi liên kết đăng nhập. Vui lòng kiểm tra email.",
+      "operationNotAllowed": "Đăng nhập bằng liên kết email đang bị tắt. Hãy bật Email/Password và Email link (passwordless) trong Firebase Console → Authentication → Sign-in method.",
+      "invalidEmail": "Email không hợp lệ.",
+      "tooManyRequests": "Quá nhiều yêu cầu. Vui lòng thử lại sau.",
+      "networkRequestFailed": "Lỗi mạng. Kiểm tra kết nối và thử lại.",
+      "genericError": "Không thể gửi liên kết đăng nhập qua email."
+    }
   }
 }

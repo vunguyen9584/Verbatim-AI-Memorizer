@@ -21,15 +21,25 @@ Add optional, account-based cloud sync so a user’s lessons and folders stay co
   - `LocalStorageLessonService` → key `verbatim_lessons`
 - Types (from `types.ts`): `Folder` and `Lesson` have `id`, `createdAt`, `updatedAt`; `Folder` also has `displayOrder`, `isDefault`.
 
-## Proposed Architecture
+## Current Implementation (v1)
+- Backend: Firebase Firestore via a `CloudAdapter` implementation (`cloudAdapterFirebase`). Feature-flagged by `VITE_SYNC_ENABLED`.
+- Auth: required for sync; when not signed in, status is `unauthenticated`.
+- Offline-first writes: Local writes happen immediately via local storage services; a `Composite` storage layer enqueues a pending op for each change into LocalStorage key `verbatim_pending_ops`.
+- Flush to cloud: A background timer (every ~10s) triggers sync. The engine batches pending ops into upserts (and tombstones for deletes) and calls `upsertFolders`/`upsertLessons` on the adapter. On success, the queue is cleared and status returns to `idle`.
+- Remote to local: Firestore realtime subscriptions (`onSnapshot`) per user stream rows. The engine applies LWW (by comparing remote `updated_at` vs local `updatedAt`) and applies tombstones for deletes.
+- Status model exposed to UI: `disabled | unauthenticated | syncing | idle | error`. UI component `SyncStatus` subscribes to status changes and calls `syncEngine.start()`.
+
+Important: A cursor-based pull (`lastSyncedAt`) is not used yet; the code defines a key but does not read/write it. ID mapping between local IDs and server UUIDs is not implemented; upserts currently rely on optional `serverId` that is not persisted in local types.
+
+## Proposed Architecture (target)
 Offline-first with a Sync Engine that reconciles local and cloud stores.
 
 - Storage Abstraction (already present):
   - Keep `LessonStorage` and `FolderStorage` interfaces.
   - Add a `CloudAdapter` implementing CRUD using the chosen backend.
-  - Add a `SyncEngine` that:
+  - Add/extend the `SyncEngine` to:
     - Tracks pending local changes (queue) while offline or before successful upload.
-    - Periodically pulls remote changes and merges into local.
+    - Support cursor-based incremental pulls (in addition to realtime) and merge into local.
     - Emits minimal events/hooks for UI sync status.
 
 - Identity & Auth:
@@ -37,8 +47,14 @@ Offline-first with a Sync Engine that reconciles local and cloud stores.
 
 - Conflict Resolution: Last-Write-Wins (LWW) by `updatedAt` with server-time stamps to avoid clock drift. Deletes use tombstones to prevent “resurrection.”
 
-## Backend Recommendation: Supabase (Postgres + Auth + Realtime)
-Reasons: native row-level security (RLS) to isolate per-user data, simple TS client, realtime for live updates, SQL migrations. Alternative: Firebase Firestore (built-in offline cache). Either works; this doc specifies Supabase.
+## Backend
+Current: Firebase Firestore (implemented)
+- Uses batch writes with `serverTimestamp()` for `updated_at` and optional tombstones via `deleted_at`.
+- Realtime updates via `onSnapshot`, filtered by `user_id`.
+
+Alternative/Future: Supabase (Postgres + Auth + Realtime)
+- Pros: native row-level security (RLS), SQL, realtime, typed client.
+- The SQL schema below applies if/when migrating to Supabase.
 
 ### Tables (DDL Sketch)
 ```sql
@@ -77,17 +93,17 @@ create table lessons (
    - Add “Sign in/Sign out” in header.
    - After sign-in, trigger initial full sync.
 
-2) CloudAdapter (Supabase)
-   - CRUD for folders/lessons scoped by `user_id`.
-   - Bulk upsert endpoints to speed up initial migration.
-   - Use server-returned `updated_at` for LWW.
+2) CloudAdapter (Firebase in current build)
+   - Batch upserts to `folders`/`lessons` collections with `serverTimestamp()` for `updated_at`.
+   - `deleted_at` set for tombstones instead of hard deletes.
+   - Realtime: `onSnapshot` subscriptions per `user_id`.
 
 3) SyncEngine
    - Maintains a local `pendingOps` queue: [{op: 'upsert'|'delete', entity: 'folder'|'lesson', payload, localId, ts}].
-   - On network/auth availability or on timer (e.g., 10s debounce), flush queue with bulk upserts/deletes.
-   - Pull phase: fetch rows updated since last sync cursor (`lastSyncedAt`) and merge.
-   - Realtime: subscribe to Supabase changes for the user to reduce polling.
-   - Status events: `sync:idle|syncing|error` for a small UI indicator.
+   - Flush: when authenticated and enabled, background timer (~10s) batches and uploads pending ops.
+   - Pull (current): relies on Firestore realtime (`onSnapshot`); cursor-based incremental pulls are not yet implemented.
+   - Merge: LWW by comparing remote `updated_at` with local `updatedAt`; deletes apply via tombstones.
+   - Status events: `disabled | unauthenticated | syncing | idle | error`.
 
 4) Services Wiring
    - Replace direct uses of `lessonStorageService`/`folderStorageService` with a composite service that delegates to Local first and enqueues ops for Sync.
@@ -100,9 +116,9 @@ create table lessons (
    - Set `lastSyncedAt` to server-time; start steady-state sync.
 
 2) Steady-State
-   - On local create/update/delete: write to Local immediately; enqueue to `pendingOps` with current local `updatedAt`.
-   - Periodically or on connectivity: flush queue; server stamps `updated_at`.
-   - Pull remote changes since `lastSyncedAt`; merge by LWW and apply tombstones.
+   - On local create/update/delete: write to Local immediately; enqueue to `pendingOps`.
+   - Background timer flushes queue; server stamps `updated_at`.
+   - Remote changes arrive via realtime subscription; merge by LWW and apply tombstones.
 
 3) Conflict Rules (LWW)
    - If both sides changed the same record: keep the one with greater `updated_at` (server-time). If equal, prefer server.
@@ -119,20 +135,28 @@ create table lessons (
 - Lessons:
   - upsertLessons(rows[]), deleteLessons(ids[]), listLessons(updated_after)
 
+- Current Firestore behaviors (implemented):
+  - Upserts: batched `set(..., { merge: true })` with `serverTimestamp()` for `updated_at`.
+  - Deletes: set `deleted_at` to `serverTimestamp()`.
+  - Listing: queries filter `deleted_at == null` (no `updatedAfter` cursor).
+  - Realtime: `onSnapshot` with `where('user_id','==', userId)`.
+
+The Supabase contract below remains relevant if adopting Supabase later:
+
 ## Security & Privacy
 - RLS ensures per-user isolation. Avoid storing secrets in the repo.
 - Optional: encrypt `content` at rest on client before upload (user passphrase-derived key) if stronger privacy is needed; out-of-scope for v1.
 
 ## Testing Plan
-- Unit: merging and conflict resolution, tombstones, id mapping.
-- Integration: sign-in, first sync migration, steady-state bi-directional updates, offline queue flush.
-- Manual: device A/B update scenarios; delete propagation.
+- Unit: LWW merges and tombstones; ensure realtime applies correctly; add id mapping tests when implemented.
+- Integration: sign-in, initial upload, periodic flush, realtime downsync.
+- Manual: device A/B update scenarios; delete propagation; network loss and recovery.
 
 ## Rollout Plan
-1) Implement Auth + CloudAdapter behind feature flag.
-2) Implement SyncEngine with LWW and tombstones.
+1) Enable Firebase-based sync behind feature flag.
+2) Harden SyncEngine (retry/backoff, dedupe) and add ID mapping + cursor pull.
 3) Ship to a small cohort; monitor errors.
-4) Enable for all users.
+4) Optionally evaluate Supabase migration.
 
 ## Effort Estimate (v1)
 - Auth + wiring: 0.5–1 day
@@ -144,3 +168,9 @@ create table lessons (
 - IndexedDB for larger/local data instead of LocalStorage.
 - Per-field merge for lessons (if needed).
 - End-to-end encryption for `content`.
+
+## Known Limitations (current build)
+- No cursor-based incremental pull; relies on realtime only.
+- No local↔server ID mapping yet; upserts may create new rows instead of updating.
+- `reorderFolders` operation is enqueued but not handled specially by the uploader.
+- No retry/backoff or queue deduplication.

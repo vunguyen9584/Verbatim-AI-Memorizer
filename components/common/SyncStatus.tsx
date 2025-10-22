@@ -3,6 +3,7 @@ import { SyncStatus as SyncStatusType } from '../../types';
 import { syncEngine } from '../../services/syncEngine';
 import { authService } from '../../services/authService';
 import { useToast } from './Toast';
+import { useTranslation } from 'react-i18next';
 
 const dotClass: Record<SyncStatusType, string> = {
   idle: 'bg-teal-400',
@@ -24,12 +25,24 @@ const SyncStatus: React.FC = () => {
   const [status, setStatus] = useState<SyncStatusType>(syncEngine.getStatus());
   const [email, setEmail] = useState('');
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const off = syncEngine.onStatusChange(setStatus);
     syncEngine.start();
     return () => off();
   }, []);
+
+  const mapEmailLinkError = (err: any): string => {
+    const code = err?.code || err?.message || '';
+    if (typeof code === 'string') {
+      if (code.includes('operation-not-allowed') || code.includes('OPERATION_NOT_ALLOWED')) return t('auth.emailLink.operationNotAllowed');
+      if (code.includes('invalid-email')) return t('auth.emailLink.invalidEmail');
+      if (code.includes('too-many-requests')) return t('auth.emailLink.tooManyRequests');
+      if (code.includes('network-request-failed')) return t('auth.emailLink.networkRequestFailed');
+    }
+    return t('auth.emailLink.genericError');
+  };
 
   return (
     <div className="flex items-center gap-3 text-sm text-gray-300">
@@ -60,9 +73,9 @@ const SyncStatus: React.FC = () => {
               if (!email) return;
               try {
                 await authService.sendEmailLink(email);
-                showToast({ type: 'success', message: 'Sign-in link sent. Check your email.' });
+                showToast({ type: 'success', message: t('auth.emailLink.sent') });
               } catch (err: any) {
-                const message = err?.message || 'Could not send email sign-in link';
+                const message = mapEmailLinkError(err);
                 showToast({ type: 'error', message, persistent: true });
               }
             }}
