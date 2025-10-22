@@ -1,131 +1,150 @@
 import { CloudAdapter, CloudFolderRow, CloudLessonRow } from '../types';
-import { ensureFirebase, firebaseDb, collection, doc, setDoc, deleteDoc, getDocs, query, where, serverTimestamp, orderBy, onSnapshot, Timestamp } from './firebaseClient';
+import { firestoreHelpers, getDb, isFirebaseConfigured } from './firebaseClient';
 
-function isConfigured(): boolean {
-  return !!ensureFirebase().app && !!firebaseDb();
+function toFolderRow(id: string, data: any): CloudFolderRow {
+  return {
+    id,
+    name: data.name,
+    display_order: data.display_order,
+    is_default: !!data.is_default,
+    created_at: (data.created_at?.toDate?.() || new Date(data.created_at)).toISOString(),
+    updated_at: (data.updated_at?.toDate?.() || new Date(data.updated_at)).toISOString(),
+    deleted_at: data.deleted_at ? (data.deleted_at?.toDate?.() || new Date(data.deleted_at)).toISOString() : null
+  };
 }
 
-const foldersCol = (userId: string) => collection(firebaseDb()!, 'users', userId, 'folders');
-const lessonsCol = (userId: string) => collection(firebaseDb()!, 'users', userId, 'lessons');
+function toLessonRow(id: string, data: any): CloudLessonRow {
+  return {
+    id,
+    folder_id: data.folder_id,
+    title: data.title,
+    content: data.content,
+    created_at: (data.created_at?.toDate?.() || new Date(data.created_at)).toISOString(),
+    updated_at: (data.updated_at?.toDate?.() || new Date(data.updated_at)).toISOString(),
+    deleted_at: data.deleted_at ? (data.deleted_at?.toDate?.() || new Date(data.deleted_at)).toISOString() : null
+  };
+}
 
 export const cloudAdapterFirebase: CloudAdapter = {
-  isConfigured(): boolean { return isConfigured(); },
-  async getServerTime(): Promise<string> { return new Date().toISOString(); },
-
+  isConfigured() { return isFirebaseConfigured(); },
+  async getServerTime() { return new Date().toISOString(); },
   async upsertFolders(rows) {
-    // rows require user scoping externally; we'll assume payload already has correct fields
-    const out: CloudFolderRow[] = [];
-    // userId is encoded in row via a virtual prop not present in type; we expect caller to split by user
+    const db = getDb();
+    if (!db) return [];
+    const batch = firestoreHelpers.writeBatch(db);
+    const ids: string[] = [];
     for (const r of rows) {
-      const userId = (r as any).user_id;
-      if (!userId) continue;
-      const id = r.id || crypto.randomUUID();
-      const ref = doc(foldersCol(userId), id);
-      await setDoc(ref, {
+      const col = firestoreHelpers.collection(db, 'folders');
+      const ref = r.id ? firestoreHelpers.doc(col, r.id) : firestoreHelpers.doc(col);
+      ids.push(ref.id);
+      batch.set(ref, {
+        user_id: (r as any).user_id,
         name: r.name,
-        display_order: r.display_order ?? 0,
-        is_default: r.is_default ?? false,
-        created_at: r.created_at ? Timestamp.fromDate(new Date(r.created_at)) : serverTimestamp(),
-        updated_at: serverTimestamp(),
-        deleted_at: r.deleted_at ? Timestamp.fromDate(new Date(r.deleted_at)) : null
-      }, { merge: true });
-      out.push({
-        id,
-        name: r.name!,
-        display_order: r.display_order ?? 0,
+        display_order: r.display_order,
         is_default: !!r.is_default,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        deleted_at: r.deleted_at ?? null
-      });
+        created_at: r.created_at ? new Date(r.created_at) : firestoreHelpers.serverTimestamp(),
+        updated_at: firestoreHelpers.serverTimestamp(),
+        deleted_at: r.deleted_at ? new Date(r.deleted_at) : null
+      }, { merge: true });
+    }
+    await batch.commit();
+    // read back
+    const out: CloudFolderRow[] = [];
+    for (const id of ids) {
+      const snap = await firestoreHelpers.getDoc(firestoreHelpers.doc(firestoreHelpers.collection(db, 'folders'), id));
+      const data = snap.data();
+      if (data) out.push(toFolderRow(snap.id, data));
     }
     return out;
   },
-
-  async deleteFolders(ids: string[]): Promise<void> {
-    // Caller must include userId per row; we cannot infer here. To keep interface stable, do soft-delete via upsert with deleted_at.
-    // No-op; SyncEngine will call upsert with tombstones instead.
+  async deleteFolders(ids) {
+    const db = getDb();
+    if (!db) return;
+    const batch = firestoreHelpers.writeBatch(db);
+    for (const id of ids) {
+      const ref = firestoreHelpers.doc(firestoreHelpers.collection(db, 'folders'), id);
+      batch.set(ref, { deleted_at: firestoreHelpers.serverTimestamp() }, { merge: true });
+    }
+    await batch.commit();
   },
-
-  async listFolders(updatedAfter?: string): Promise<CloudFolderRow[]> {
-    throw new Error('listFolders requires user scoping at call site');
+  async listFolders(updatedAfter) {
+    const db = getDb();
+    if (!db) return [];
+    const q = firestoreHelpers.query(
+      firestoreHelpers.collection(db, 'folders'),
+      firestoreHelpers.where('deleted_at', '==', null)
+    );
+    const snap = await firestoreHelpers.getDocs(q);
+    return snap.docs.map(d => toFolderRow(d.id, d.data()));
   },
-
   async upsertLessons(rows) {
-    const out: CloudLessonRow[] = [];
+    const db = getDb();
+    if (!db) return [];
+    const batch = firestoreHelpers.writeBatch(db);
+    const ids: string[] = [];
     for (const r of rows) {
-      const userId = (r as any).user_id;
-      if (!userId) continue;
-      const id = r.id || crypto.randomUUID();
-      const ref = doc(lessonsCol(userId), id);
-      await setDoc(ref, {
+      const col = firestoreHelpers.collection(db, 'lessons');
+      const ref = r.id ? firestoreHelpers.doc(col, r.id) : firestoreHelpers.doc(col);
+      ids.push(ref.id);
+      batch.set(ref, {
+        user_id: (r as any).user_id,
         folder_id: r.folder_id,
         title: r.title,
         content: r.content,
-        created_at: r.created_at ? Timestamp.fromDate(new Date(r.created_at)) : serverTimestamp(),
-        updated_at: serverTimestamp(),
-        deleted_at: r.deleted_at ? Timestamp.fromDate(new Date(r.deleted_at)) : null
+        created_at: r.created_at ? new Date(r.created_at) : firestoreHelpers.serverTimestamp(),
+        updated_at: firestoreHelpers.serverTimestamp(),
+        deleted_at: r.deleted_at ? new Date(r.deleted_at) : null
       }, { merge: true });
-      out.push({
-        id,
-        folder_id: r.folder_id!,
-        title: r.title!,
-        content: r.content!,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        deleted_at: r.deleted_at ?? null
-      });
+    }
+    await batch.commit();
+    const out: CloudLessonRow[] = [];
+    for (const id of ids) {
+      const snap = await firestoreHelpers.getDoc(firestoreHelpers.doc(firestoreHelpers.collection(db, 'lessons'), id));
+      const data = snap.data();
+      if (data) out.push(toLessonRow(snap.id, data));
     }
     return out;
   },
-
-  async deleteLessons(ids: string[]): Promise<void> {
-    // No-op; handled via tombstone
+  async deleteLessons(ids) {
+    const db = getDb();
+    if (!db) return;
+    const batch = firestoreHelpers.writeBatch(db);
+    for (const id of ids) {
+      const ref = firestoreHelpers.doc(firestoreHelpers.collection(db, 'lessons'), id);
+      batch.set(ref, { deleted_at: firestoreHelpers.serverTimestamp() }, { merge: true });
+    }
+    await batch.commit();
   },
-
-  async listLessons(updatedAfter?: string): Promise<CloudLessonRow[]> {
-    throw new Error('listLessons requires user scoping at call site');
+  async listLessons(updatedAfter) {
+    const db = getDb();
+    if (!db) return [];
+    const q = firestoreHelpers.query(
+      firestoreHelpers.collection(db, 'lessons'),
+      firestoreHelpers.where('deleted_at', '==', null)
+    );
+    const snap = await firestoreHelpers.getDocs(q);
+    return snap.docs.map(d => toLessonRow(d.id, d.data()));
   },
-
-  onFoldersChanged(userId: string, cb: (rows: CloudFolderRow[]) => void) {
-    const constraints = [orderBy('updated_at', 'asc')];
-    const q = query(foldersCol(userId), ...constraints as any);
-    return onSnapshot(q, (snap) => {
-      const rows: CloudFolderRow[] = snap.docs.map(d => {
-        const data: any = d.data();
-        return {
-          id: d.id,
-          name: data.name,
-          display_order: data.display_order,
-          is_default: data.is_default,
-          created_at: (data.created_at?.toDate?.() || new Date()).toISOString(),
-          updated_at: (data.updated_at?.toDate?.() || new Date()).toISOString(),
-          deleted_at: data.deleted_at ? (data.deleted_at.toDate?.() || new Date()).toISOString() : null
-        };
-      });
-      cb(rows);
+  onFoldersChanged(userId, cb) {
+    const db = getDb();
+    if (!db) return () => {};
+    const q = firestoreHelpers.query(
+      firestoreHelpers.collection(db, 'folders'),
+      firestoreHelpers.where('user_id', '==', userId)
+    );
+    return firestoreHelpers.onSnapshot(q, (snap) => {
+      cb(snap.docs.map(d => toFolderRow(d.id, d.data())));
     });
   },
-
-  onLessonsChanged(userId: string, cb: (rows: CloudLessonRow[]) => void) {
-    const constraints = [orderBy('updated_at', 'asc')];
-    const q = query(lessonsCol(userId), ...constraints as any);
-    return onSnapshot(q, (snap) => {
-      const rows: CloudLessonRow[] = snap.docs.map(d => {
-        const data: any = d.data();
-        return {
-          id: d.id,
-          folder_id: data.folder_id,
-          title: data.title,
-          content: data.content,
-          created_at: (data.created_at?.toDate?.() || new Date()).toISOString(),
-          updated_at: (data.updated_at?.toDate?.() || new Date()).toISOString(),
-          deleted_at: data.deleted_at ? (data.deleted_at.toDate?.() || new Date()).toISOString() : null
-        };
-      });
-      cb(rows);
+  onLessonsChanged(userId, cb) {
+    const db = getDb();
+    if (!db) return () => {};
+    const q = firestoreHelpers.query(
+      firestoreHelpers.collection(db, 'lessons'),
+      firestoreHelpers.where('user_id', '==', userId)
+    );
+    return firestoreHelpers.onSnapshot(q, (snap) => {
+      cb(snap.docs.map(d => toLessonRow(d.id, d.data())));
     });
   }
 };
-
-

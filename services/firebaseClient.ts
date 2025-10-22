@@ -1,96 +1,111 @@
-// Firebase initialization and helpers
-import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, query, where, serverTimestamp, orderBy, onSnapshot, Timestamp, Firestore } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import {
+  getAuth,
+  onAuthStateChanged as fbOnAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  isSignInWithEmailLink,
+  sendSignInLinkToEmail,
+  signInWithEmailLink,
+  signOut as fbSignOut
+} from 'firebase/auth';
+import {
+  getFirestore,
+  serverTimestamp,
+  collection,
+  doc,
+  writeBatch,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  onSnapshot,
+  setDoc
+} from 'firebase/firestore';
 
-export interface FirebaseEnvConfig {
-  apiKey?: string;
-  authDomain?: string;
-  projectId?: string;
-  appId?: string;
+export const firebaseEnv = {
+  apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY,
+  authDomain: (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID,
+  appId: (import.meta as any).env?.VITE_FIREBASE_APP_ID
+};
+
+export function isFirebaseConfigured(): boolean {
+  return !!(firebaseEnv.apiKey && firebaseEnv.authDomain && firebaseEnv.projectId && firebaseEnv.appId);
 }
 
-export function getFirebaseEnv(): FirebaseEnvConfig {
-  const env: any = (import.meta as any).env || {};
-  return {
-    apiKey: env.VITE_FIREBASE_API_KEY,
-    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: env.VITE_FIREBASE_PROJECT_ID,
-    appId: env.VITE_FIREBASE_APP_ID
-  };
+export function getFirebaseApp() {
+  if (!isFirebaseConfigured()) return null;
+  if (getApps().length) return getApps()[0];
+  return initializeApp({
+    apiKey: firebaseEnv.apiKey,
+    authDomain: firebaseEnv.authDomain,
+    projectId: firebaseEnv.projectId,
+    appId: firebaseEnv.appId
+  });
 }
 
-let app: FirebaseApp | null = null;
-let db: Firestore | null = null;
-
-export function ensureFirebase(): { app: FirebaseApp | null; db: Firestore | null } {
-  if (getApps().length === 0) {
-    const cfg = getFirebaseEnv();
-    if (!cfg.apiKey || !cfg.authDomain || !cfg.projectId || !cfg.appId) {
-      return { app: null, db: null };
-    }
-    app = initializeApp({
-      apiKey: cfg.apiKey,
-      authDomain: cfg.authDomain,
-      projectId: cfg.projectId,
-      appId: cfg.appId
-    });
-    db = getFirestore(app);
-  }
-  return { app: getApps()[0] || app, db };
+export function getDb() {
+  const app = getFirebaseApp();
+  return app ? getFirestore(app) : null;
 }
 
-export const firebaseAuth = () => {
-  const { app } = ensureFirebase();
+export function getAuthInstance() {
+  const app = getFirebaseApp();
   return app ? getAuth(app) : null;
-};
-
-export const firebaseDb = () => {
-  const { db } = ensureFirebase();
-  return db;
-};
+}
 
 export const authHelpers = {
-  onAuthStateChanged(cb: (user: User | null) => void) {
-    const auth = firebaseAuth();
+  onAuthStateChanged(cb: (user: { uid: string; email: string | null } | null) => void) {
+    const auth = getAuthInstance();
     if (!auth) return () => {};
-    return onAuthStateChanged(auth, cb);
+    return fbOnAuthStateChanged(auth, (user) => cb(user ? { uid: user.uid, email: user.email } : null));
   },
   async signInWithGoogle() {
-    const auth = firebaseAuth();
+    const auth = getAuthInstance();
     if (!auth) throw new Error('Firebase not configured');
     const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
   },
   async sendEmailLink(email: string) {
-    const auth = firebaseAuth();
+    const auth = getAuthInstance();
     if (!auth) throw new Error('Firebase not configured');
     const actionCodeSettings = {
       url: window.location.origin,
       handleCodeInApp: true
-    };
+    } as const;
     await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-    window.localStorage.setItem('emailForSignIn', email);
+    window.localStorage.setItem('verbatim_email_for_signin', email);
   },
   async completeEmailLinkSignIn() {
-    const auth = firebaseAuth();
+    const auth = getAuthInstance();
     if (!auth) return;
     if (isSignInWithEmailLink(auth, window.location.href)) {
-      let email = window.localStorage.getItem('emailForSignIn') || '';
+      let email = window.localStorage.getItem('verbatim_email_for_signin');
       if (!email) {
         email = window.prompt('Please provide your email for confirmation') || '';
       }
       await signInWithEmailLink(auth, email, window.location.href);
-      window.localStorage.removeItem('emailForSignIn');
+      window.localStorage.removeItem('verbatim_email_for_signin');
     }
   },
   async signOut() {
-    const auth = firebaseAuth();
+    const auth = getAuthInstance();
     if (!auth) return;
-    await signOut(auth);
+    await fbSignOut(auth);
   }
 };
 
-export { collection, doc, setDoc, deleteDoc, getDocs, query, where, serverTimestamp, orderBy, onSnapshot, Timestamp };
-
-
+export const firestoreHelpers = {
+  serverTimestamp,
+  collection,
+  doc,
+  writeBatch,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  onSnapshot,
+  setDoc,
+  getDb
+};
