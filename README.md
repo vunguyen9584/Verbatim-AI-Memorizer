@@ -18,6 +18,36 @@ Prerequisites: Node.js (18+ recommended)
 
 AI key usage: Vite maps `GEMINI_API_KEY` to `process.env.API_KEY` at build time (see `vite.config.ts`).
 
+## Optional: Enable Cloud Sync (Firebase Auth + Firestore)
+
+To use Google sign‑in or Email Link sign‑in and enable syncing, set up Firebase and local env variables.
+
+1) Create `.env.local` in the project root:
+
+```
+VITE_SYNC_ENABLED=true
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_APP_ID=your_firebase_app_id
+```
+
+2) Firebase Console configuration:
+
+- Authentication → Sign‑in method:
+  - Enable Google provider
+  - Enable Email/Passwordless → Email link (passwordless)
+- Authentication → Settings → Authorized domains:
+  - Add `localhost` and optionally `127.0.0.1`
+
+3) Localhost notes:
+
+- Dev server runs at `http://localhost:3000` by default. The app uses `window.location.origin` in the email link flow, so the origin must be authorized in Firebase.
+- If Google popup is blocked, allow popups for `localhost:3000` or try again.
+- For the email link flow, after clicking the link in your email, ensure it opens in the same browser profile you used to send the link so the app can read the stored email and complete sign‑in.
+
+After saving `.env.local`, restart the dev server.
+
 ## Features
 
 - Four Learning Modes
