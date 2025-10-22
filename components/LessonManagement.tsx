@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Lesson, Folder } from '../types';
-import { lessonStorageService } from '../services/lessonStorageService';
-import { folderStorageService } from '../services/folderStorageService';
+// Use composite services to enqueue sync operations
+import { compositeLessonStorage as lessonStorageService } from '../services/compositeStorageService';
+import { compositeFolderStorage as folderStorageService } from '../services/compositeStorageService';
 import { useToast } from './common/Toast';
 import Card from './common/Card';
 import Button from './common/Button';

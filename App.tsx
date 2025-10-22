@@ -14,6 +14,7 @@ import { BrainCircuitIcon, BugIcon } from './components/common/Icon';
 import DebugPanel from './components/DebugPanel';
 import { ToastProvider, useToast } from './components/common/Toast';
 import { lessonStorageService } from './services/lessonStorageService';
+import SyncStatus from './components/common/SyncStatus';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -136,7 +137,8 @@ const AppContent: React.FC = () => {
               </Trans>
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <SyncStatus />
             <button onClick={() => changeLanguage('en')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>EN</button>
             <button onClick={() => changeLanguage('vi')} className={`px-2 py-1 text-sm rounded ml-2 ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>VI</button>
             <button onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)} className="text-gray-500 hover:text-teal-400 transition-colors ml-4" aria-label={t('openDebugPanel')}>

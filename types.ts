@@ -167,3 +167,70 @@ export interface ToastMessage {
   duration?: number;
   persistent?: boolean;
 }
+
+// --- SYNC & AUTH TYPES ---
+
+export interface AuthUser {
+  id: string;
+  email?: string | null;
+}
+
+export type SyncEntity = 'folder' | 'lesson';
+
+export type SyncOpType = 'upsert' | 'delete';
+
+export interface PendingOp<TPayload = any> {
+  id: string; // local op id
+  op: SyncOpType;
+  entity: SyncEntity;
+  payload: TPayload;
+  localId?: string; // local entity id
+  ts: number; // client timestamp (ms)
+}
+
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'disabled' | 'unauthenticated';
+
+export interface CloudFolderRow {
+  id: string; // server uuid
+  name: string;
+  display_order: number;
+  is_default: boolean;
+  created_at: string; // ISO
+  updated_at: string; // ISO
+  deleted_at: string | null; // ISO
+}
+
+export interface CloudLessonRow {
+  id: string; // server uuid
+  folder_id: string; // server uuid
+  title: string;
+  content: string;
+  created_at: string; // ISO
+  updated_at: string; // ISO
+  deleted_at: string | null; // ISO
+}
+
+export interface CloudAdapter {
+  isConfigured(): boolean;
+  getServerTime(): Promise<string>; // ISO timestamp
+  // Folders
+  upsertFolders(rows: Array<Partial<CloudFolderRow> & { id?: string }>): Promise<CloudFolderRow[]>;
+  deleteFolders(ids: string[]): Promise<void>;
+  listFolders(updatedAfter?: string): Promise<CloudFolderRow[]>;
+  // Lessons
+  upsertLessons(rows: Array<Partial<CloudLessonRow> & { id?: string }>): Promise<CloudLessonRow[]>;
+  deleteLessons(ids: string[]): Promise<void>;
+  listLessons(updatedAfter?: string): Promise<CloudLessonRow[]>;
+  // Optional realtime subscriptions
+  onFoldersChanged?: (userId: string, cb: (rows: CloudFolderRow[]) => void) => () => void;
+  onLessonsChanged?: (userId: string, cb: (rows: CloudLessonRow[]) => void) => () => void;
+}
+
+export interface SyncEngineAPI {
+  start(): void;
+  stop(): void;
+  getStatus(): SyncStatus;
+  onStatusChange(listener: (status: SyncStatus) => void): () => void;
+  enqueue(op: PendingOp): void;
+  triggerSync(reason?: string): Promise<void>;
+}

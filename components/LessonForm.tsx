@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Lesson, Folder } from '../types';
-import { lessonStorageService } from '../services/lessonStorageService';
-import { folderStorageService } from '../services/folderStorageService';
+import { compositeLessonStorage as lessonStorageService } from '../services/compositeStorageService';
+import { compositeFolderStorage as folderStorageService } from '../services/compositeStorageService';
 import Button from './common/Button';
 import { XCircleIcon } from './common/Icon';
 

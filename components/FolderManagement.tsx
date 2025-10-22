@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Folder } from '../types';
-import { folderStorageService } from '../services/folderStorageService';
-import { lessonStorageService } from '../services/lessonStorageService';
+import { compositeFolderStorage as folderStorageService } from '../services/compositeStorageService';
+import { compositeLessonStorage as lessonStorageService } from '../services/compositeStorageService';
 import { useToast } from './common/Toast';
 import Card from './common/Card';
 import Button from './common/Button';
