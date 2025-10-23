@@ -112,7 +112,7 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex justify-between items-center p-6 border-b border-gray-700">
           <h2 className="text-xl font-bold text-white">
             {lesson ? t('lessonForm.editLesson') : t('lessonForm.createLesson')}
@@ -126,8 +126,8 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-200 mb-2">
                 {t('lessonForm.titleLabel')}
@@ -184,8 +184,8 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
               </p>
             </div>
           </div>
-
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="shrink-0 p-4 sm:p-6 border-t border-gray-700 bg-gray-800">
+            <div className="flex justify-end gap-3">
             <Button
               type="button"
               onClick={handleCancel}
@@ -204,6 +204,7 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
                 : (lesson ? t('lessonForm.update') : t('lessonForm.create'))
               }
             </Button>
+            </div>
           </div>
         </form>
       </div>
