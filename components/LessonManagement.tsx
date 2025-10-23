@@ -6,6 +6,7 @@ import { folderStorageService } from '../services/folderStorageService';
 import { useToast } from './common/Toast';
 import Card from './common/Card';
 import Button from './common/Button';
+import ConfirmDialog from './common/ConfirmDialog';
 import { EditIcon, TrashIcon, PlayIcon, ArrowLeftIcon } from './common/Icon';
 import LessonForm from './LessonForm';
 import FolderManagement from './FolderManagement';
@@ -19,6 +20,7 @@ const LessonManagement: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
+  const [pendingDeleteLesson, setPendingDeleteLesson] = useState<Lesson | null>(null);
 
   const loadLessons = useCallback(async (folderId?: string) => {
     try {
@@ -78,25 +80,21 @@ const LessonManagement: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (lesson: Lesson) => {
-    if (!window.confirm(t('lessonManagement.deleteConfirm', { title: lesson.title }))) {
-      return;
-    }
+  const requestDeleteLesson = (lesson: Lesson) => {
+    setPendingDeleteLesson(lesson);
+  };
 
+  const performDeleteLesson = async () => {
+    if (!pendingDeleteLesson) return;
     try {
-      await lessonStorageService.deleteLesson(lesson.id);
+      await lessonStorageService.deleteLesson(pendingDeleteLesson.id);
       await loadLessons(selectedFolder?.id);
-      showToast({
-        type: 'success',
-        message: t('lessonManagement.deleteSuccess')
-      });
+      showToast({ type: 'success', message: t('lessonManagement.deleteSuccess') });
     } catch (error) {
       console.error('Error deleting lesson:', error);
-      showToast({
-        type: 'error',
-        message: t('lessonManagement.deleteError'),
-        persistent: true
-      });
+      showToast({ type: 'error', message: t('lessonManagement.deleteError'), persistent: true });
+    } finally {
+      setPendingDeleteLesson(null);
     }
   };
 
@@ -213,7 +211,7 @@ const LessonManagement: React.FC = () => {
                     <EditIcon className="w-4 h-4" />
                   </Button>
                   <Button
-                    onClick={() => handleDelete(lesson)}
+                    onClick={() => requestDeleteLesson(lesson)}
                     variant="ghost"
                     size="sm"
                     className="px-3 py-1 text-red-400 hover:text-red-300"
@@ -240,6 +238,16 @@ const LessonManagement: React.FC = () => {
           })}
         />
       )}
+
+      <ConfirmDialog
+        open={!!pendingDeleteLesson}
+        title={t('lessonManagement.deleteTitle', { defaultValue: 'Delete lesson' })}
+        message={pendingDeleteLesson ? t('lessonManagement.deleteConfirm', { title: pendingDeleteLesson.title }) : ''}
+        cancelLabel={t('lessonForm.cancel')}
+        confirmLabel={t('lessonManagement.deleteAction', { defaultValue: 'Delete' })}
+        onCancel={() => setPendingDeleteLesson(null)}
+        onConfirm={performDeleteLesson}
+      />
     </div>
   );
 };

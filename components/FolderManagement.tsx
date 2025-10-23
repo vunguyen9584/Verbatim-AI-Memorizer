@@ -7,6 +7,7 @@ import { useToast } from './common/Toast';
 import Card from './common/Card';
 import Button from './common/Button';
 import { EditIcon, TrashIcon, FolderIcon, ChevronRightIcon } from './common/Icon';
+import ConfirmDialog from './common/ConfirmDialog';
 
 interface FolderManagementProps {
   onFolderSelect: (folderId: string) => void;
@@ -24,6 +25,7 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
   const [draggedFolder, setDraggedFolder] = useState<Folder | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<Folder | null>(null);
   const [lessonCounts, setLessonCounts] = useState<Record<string, number>>({});
+  const [pendingDeleteFolder, setPendingDeleteFolder] = useState<Folder | null>(null);
 
   const loadFolders = useCallback(async () => {
     try {
@@ -102,26 +104,20 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
       });
       return;
     }
+    setPendingDeleteFolder(folder);
+  };
 
-    const displayName = folder.name.startsWith('folderManagement.') ? t(folder.name) : folder.name;
-    if (!window.confirm(t('folderManagement.deleteConfirm', { name: displayName }))) {
-      return;
-    }
-
+  const performDeleteFolder = async () => {
+    if (!pendingDeleteFolder) return;
     try {
-      await folderStorageService.deleteFolder(folder.id);
+      await folderStorageService.deleteFolder(pendingDeleteFolder.id);
       await loadFolders();
-      showToast({
-        type: 'success',
-        message: t('folderManagement.deleteSuccess')
-      });
+      showToast({ type: 'success', message: t('folderManagement.deleteSuccess') });
     } catch (error) {
       console.error('Error deleting folder:', error);
-      showToast({
-        type: 'error',
-        message: t('folderManagement.deleteError'),
-        persistent: true
-      });
+      showToast({ type: 'error', message: t('folderManagement.deleteError'), persistent: true });
+    } finally {
+      setPendingDeleteFolder(null);
     }
   };
 
@@ -401,6 +397,16 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDeleteFolder}
+        title={t('folderManagement.deleteTitle', { defaultValue: 'Delete folder' })}
+        message={pendingDeleteFolder ? t('folderManagement.deleteConfirm', { name: pendingDeleteFolder.name.startsWith('folderManagement.') ? t(pendingDeleteFolder.name) : pendingDeleteFolder.name }) : ''}
+        cancelLabel={t('folderManagement.cancel')}
+        confirmLabel={t('folderManagement.deleteAction', { defaultValue: 'Delete' })}
+        onCancel={() => setPendingDeleteFolder(null)}
+        onConfirm={performDeleteFolder}
+      />
     </div>
   );
 };
