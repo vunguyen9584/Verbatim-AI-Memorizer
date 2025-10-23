@@ -218,7 +218,9 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
         while (currentSentenceIndex <= endIdx) {
             if (isAppTurn) {
                 // App reveals sentences
-                let sentencesToReveal = options.appSentences === 'all' ? endIdx - currentSentenceIndex + 1 : options.appSentences;
+                let sentencesToReveal = typeof options.appSentences === 'number' 
+                  ? options.appSentences 
+                  : endIdx - currentSentenceIndex + 1;
                 if (options.type === CoPlayModeType.AppFirstRandom || options.type === CoPlayModeType.UserFirstRandom) {
                     sentencesToReveal = Math.floor(Math.random() * 3) + 1; // Random 1-3 sentences
                 }
@@ -235,7 +237,9 @@ export const planCoPlay = async (text: string, tokens: string[], options: CoPlay
                 });
             } else {
                 // User types sentences
-                let sentencesToTypeRaw = options.userSentences === 'all' ? endIdx - currentSentenceIndex + 1 : options.userSentences;
+                let sentencesToTypeRaw = typeof options.userSentences === 'number' 
+                  ? options.userSentences 
+                  : endIdx - currentSentenceIndex + 1;
                 if (options.type === CoPlayModeType.AppFirstRandom || options.type === CoPlayModeType.UserFirstRandom) {
                     sentencesToTypeRaw = Math.floor(Math.random() * 3) + 1; // Random 1-3 sentences
                 }

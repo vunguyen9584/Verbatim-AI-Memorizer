@@ -364,25 +364,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   };
 
   const handleReset = () => {
-    if (!plan) return;
-
-    setTimelineIndex(0);
-    setUserInput('');
-    setFeedback(null);
-    setHint('');
-    setHintWords(0);
-    setIncorrectFeedback(null);
-    setCurrentUserSentenceIndex(0);
-
-    const startsWithPause = plan.timeline.length > 0 && plan.timeline[0].pause_require.length > 0;
-    setIsPaused(startsWithPause);
-
-    if (startsWithPause) {
-      const firstPauseStartToken = plan.timeline[0].pause_require[0].span[0];
-      setRevealedTokenIndex(firstPauseStartToken - 1);
-    } else {
-      setRevealedTokenIndex(-1);
-    }
+    fetchPlan();
   };
 
   if (!plan) {
