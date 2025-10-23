@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authService } from '../../services/authService';
 import { AuthUser } from '../../types';
+import Avatar from './Avatar';
 
 const SyncStatus: React.FC = () => {
   const { t } = useTranslation();
@@ -54,17 +55,12 @@ const SyncStatus: React.FC = () => {
         className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors"
       >
         {/* Avatar */}
-        {user.photoURL ? (
-          <img
-            src={user.photoURL}
-            alt={user.displayName || user.email || 'User'}
-            className="w-8 h-8 rounded-full"
-          />
-        ) : (
-          <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white font-medium">
-            {(user.displayName || user.email || 'U')[0].toUpperCase()}
-          </div>
-        )}
+        <Avatar
+          src={user.photoURL}
+          alt={user.displayName || user.email || 'User'}
+          size="sm"
+          fallbackText={user.displayName || user.email || ''}
+        />
 
         {/* User info */}
         <div className="text-left hidden md:block">
