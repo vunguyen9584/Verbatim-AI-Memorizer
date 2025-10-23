@@ -10,7 +10,7 @@ import { useToast } from '../common/Toast';
 type TabType = 'google' | 'email';
 
 const AuthGate: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('google');
   const [loading, setLoading] = useState(false);
@@ -128,7 +128,14 @@ const AuthGate: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex items-center justify-center p-4">
         <Card className="max-w-md w-full bg-gray-800 shadow-2xl">
-          <div className="text-center p-8">
+          <div className="p-8">
+            <div className="flex justify-end mb-4">
+              <div className="flex items-center gap-2">
+                <button onClick={() => i18n.changeLanguage('en')} className={`px-2 py-1 text-xs rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700 text-gray-200'}`}>EN</button>
+                <button onClick={() => i18n.changeLanguage('vi')} className={`px-2 py-1 text-xs rounded ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700 text-gray-200'}`}>VI</button>
+              </div>
+            </div>
+            <div className="text-center">
             <div className="mb-6">
               <div className="w-20 h-20 bg-teal-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
@@ -162,6 +169,7 @@ const AuthGate: React.FC = () => {
             >
               {t('lessonForm.close')}
             </Button>
+            </div>
           </div>
         </Card>
       </div>
@@ -172,6 +180,12 @@ const AuthGate: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex items-center justify-center p-4">
       <Card className="max-w-md w-full bg-gray-800 shadow-2xl">
         <div className="p-8">
+          <div className="flex justify-end mb-4">
+            <div className="flex items-center gap-2">
+              <button onClick={() => i18n.changeLanguage('en')} className={`px-2 py-1 text-xs rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700 text-gray-200'}`}>EN</button>
+              <button onClick={() => i18n.changeLanguage('vi')} className={`px-2 py-1 text-xs rounded ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700 text-gray-200'}`}>VI</button>
+            </div>
+          </div>
           {/* Header */}
           <div className="text-center mb-8">
             <BrainCircuitIcon className="w-16 h-16 text-teal-400 mx-auto mb-4" />
