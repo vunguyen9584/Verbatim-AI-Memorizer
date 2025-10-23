@@ -1,222 +1,214 @@
+import { collection, doc, getDoc, getDocs, query, where, orderBy, setDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, Timestamp, limit } from 'firebase/firestore';
+import { db } from './firebaseClient';
+import { authService } from './authService';
 import { Folder, FolderStorage } from '../types';
 
-class LocalStorageFolderService implements FolderStorage {
-  private readonly STORAGE_KEY = 'verbatim_folders';
+class FirestoreFolderService implements FolderStorage {
+  private readonly USERS_COLLECTION = 'users';
+  private readonly FOLDERS_SUBCOLLECTION = 'folders';
   private readonly DEFAULT_FOLDER_ID = 'default';
+  private readonly LOCAL_STORAGE_KEY = 'verbatim_folders';
 
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  private getUid(): string {
+    const user = authService.getUser();
+    if (!user?.uid) throw new Error('Not authenticated');
+    return user.uid;
   }
 
-  private getStoredFolders(): Folder[] {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      if (!stored) {
-        // Initialize with default folder
-        const defaultFolder = this.createDefaultFolder();
-        this.saveToStorage([defaultFolder]);
-        return [defaultFolder];
-      }
-      
-      const folders = JSON.parse(stored);
-      let needsMigration = false;
-      
-      const parsedFolders = folders.map((folder: any, index: number) => {
-        // Migration: add displayOrder if it doesn't exist
-        if (folder.displayOrder === undefined) {
-          needsMigration = true;
-          return {
-            ...folder,
-            displayOrder: index,
-            createdAt: new Date(folder.createdAt),
-            updatedAt: new Date(folder.updatedAt)
-          };
-        }
-        
-        return {
-          ...folder,
-          createdAt: new Date(folder.createdAt),
-          updatedAt: new Date(folder.updatedAt)
-        };
-      });
-
-      // Migration: normalize default folder's name to i18n key
-      const defaultByIdIndex = parsedFolders.findIndex((f: Folder) => f.id === this.DEFAULT_FOLDER_ID);
-      if (defaultByIdIndex !== -1) {
-        const defaultFolder = parsedFolders[defaultByIdIndex];
-        let updated = false;
-        if (defaultFolder.name !== 'folderManagement.default') {
-          defaultFolder.name = 'folderManagement.default';
-          updated = true;
-        }
-        if (!defaultFolder.isDefault) {
-          defaultFolder.isDefault = true;
-          updated = true;
-        }
-        if (updated) {
-          defaultFolder.updatedAt = new Date();
-          needsMigration = true;
-        }
-      }
-
-      // Ensure default folder exists
-      if (!parsedFolders.find((f: Folder) => f.id === this.DEFAULT_FOLDER_ID)) {
-        const defaultFolder = this.createDefaultFolder();
-        parsedFolders.unshift(defaultFolder);
-        needsMigration = true;
-      }
-
-      // Save migrated data back to storage
-      if (needsMigration) {
-        this.saveToStorage(parsedFolders);
-      }
-
-      // Sort by displayOrder (default folder always first)
-      return parsedFolders.sort((a, b) => {
-        if (a.isDefault) return -1;
-        if (b.isDefault) return 1;
-        return a.displayOrder - b.displayOrder;
-      });
-    } catch (error) {
-      console.error('Error loading folders from storage:', error);
-      const defaultFolder = this.createDefaultFolder();
-      return [defaultFolder];
-    }
+  private foldersColRef(uid: string) {
+    return collection(db, this.USERS_COLLECTION, uid, this.FOLDERS_SUBCOLLECTION);
   }
 
-  private createDefaultFolder(): Folder {
+  private mapToFolder(id: string, data: any): Folder {
     return {
-      id: this.DEFAULT_FOLDER_ID,
-      name: 'folderManagement.default', // Translation key instead of hardcoded text
-      displayOrder: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isDefault: true
+      id,
+      name: data.name || '',
+      displayOrder: typeof data.displayOrder === 'number' ? data.displayOrder : 0,
+      createdAt: this.toDate(data.createdAt),
+      updatedAt: this.toDate(data.updatedAt),
+      isDefault: !!data.isDefault,
     };
   }
 
-  private saveToStorage(folders: Folder[]): void {
+  private toDate(value: any): Date {
+    if (value instanceof Timestamp) return value.toDate();
+    if (value instanceof Date) return value;
+    if (typeof value === 'string' || typeof value === 'number') return new Date(value);
+    return new Date();
+  }
+
+  private async ensureDefaultFolder(uid: string): Promise<Folder> {
+    // Try known id first for consistency
+    const defaultRef = doc(db, this.USERS_COLLECTION, uid, this.FOLDERS_SUBCOLLECTION, this.DEFAULT_FOLDER_ID);
+    const snap = await getDoc(defaultRef);
+    if (snap.exists()) {
+      return this.mapToFolder(snap.id, snap.data());
+    }
+
+    // Fallback: query any folder marked isDefault
+    const q = query(this.foldersColRef(uid), where('isDefault', '==', true), limit(1));
+    const qSnap = await getDocs(q);
+    if (!qSnap.empty) {
+      const d = qSnap.docs[0];
+      return this.mapToFolder(d.id, d.data());
+    }
+
+    // Create if not exists
+    const payload = {
+      name: 'folderManagement.default',
+      displayOrder: 0,
+      isDefault: true,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    await setDoc(defaultRef, payload);
+    return this.mapToFolder(this.DEFAULT_FOLDER_ID, payload);
+  }
+
+  private async migrateLocalIfNeeded(uid: string): Promise<void> {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(folders));
-    } catch (error) {
-      console.error('Error saving folders to storage:', error);
-      throw new Error('Failed to save folders to storage');
+      // If remote already has folders, skip
+      const anySnap = await getDocs(query(this.foldersColRef(uid), limit(1)));
+      if (!anySnap.empty) return;
+
+      const raw = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+      if (!raw) {
+        // At least ensure default exists
+        await this.ensureDefaultFolder(uid);
+        return;
+      }
+
+      const localFolders: any[] = JSON.parse(raw);
+      const batch = writeBatch(db);
+
+      // Ensure default first
+      const hasDefaultLocal = localFolders.some((f) => f.id === this.DEFAULT_FOLDER_ID || f.isDefault);
+      if (!hasDefaultLocal) {
+        const defRef = doc(db, this.USERS_COLLECTION, uid, this.FOLDERS_SUBCOLLECTION, this.DEFAULT_FOLDER_ID);
+        batch.set(defRef, {
+          name: 'folderManagement.default',
+          displayOrder: 0,
+          isDefault: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      for (let i = 0; i < localFolders.length; i++) {
+        const f = localFolders[i];
+        const id = f.id || undefined;
+        if (!id) continue;
+        const ref = doc(db, this.USERS_COLLECTION, uid, this.FOLDERS_SUBCOLLECTION, id);
+        batch.set(ref, {
+          name: f.name || '',
+          displayOrder: typeof f.displayOrder === 'number' ? f.displayOrder : i,
+          isDefault: !!f.isDefault || id === this.DEFAULT_FOLDER_ID,
+          createdAt: f.createdAt ? new Date(f.createdAt) : serverTimestamp(),
+          updatedAt: f.updatedAt ? new Date(f.updatedAt) : serverTimestamp(),
+        }, { merge: true });
+      }
+
+      await batch.commit();
+      // Clear local cached folders after successful migration
+      localStorage.removeItem(this.LOCAL_STORAGE_KEY);
+    } catch (e) {
+      // Non-fatal
+      console.warn('Folder migration skipped:', e);
     }
   }
 
-  async saveFolder(folderData: Omit<Folder, 'id' | 'createdAt' | 'updatedAt'>): Promise<Folder> {
-    const folders = this.getStoredFolders();
-    
-    // Calculate next display order (max + 1)
-    const maxOrder = folders.reduce((max, folder) => 
-      Math.max(max, folder.displayOrder), -1);
-    
-    const newFolder: Folder = {
-      ...folderData,
-      id: this.generateId(),
-      displayOrder: maxOrder + 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isDefault: false
-    };
+  private async fetchAll(uid: string): Promise<Folder[]> {
+    await this.ensureDefaultFolder(uid);
+    await this.migrateLocalIfNeeded(uid);
+    const qAll = query(this.foldersColRef(uid), orderBy('displayOrder', 'asc'));
+    const snap = await getDocs(qAll);
+    const folders = snap.docs.map((d) => this.mapToFolder(d.id, d.data()));
+    // Ensure default is first even if displayOrder changed incorrectly
+    return folders.sort((a, b) => {
+      if (a.isDefault) return -1;
+      if (b.isDefault) return 1;
+      return a.displayOrder - b.displayOrder;
+    });
+  }
 
-    folders.push(newFolder);
-    this.saveToStorage(folders);
-    
-    return newFolder;
+  async saveFolder(folderData: Omit<Folder, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>): Promise<Folder> {
+    const uid = this.getUid();
+    if (folderData.isDefault) throw new Error('Cannot create default folder');
+    const existing = await this.fetchAll(uid);
+    const nextOrder = existing.reduce((max, f) => Math.max(max, f.displayOrder), -1) + 1;
+
+    // Generate id via Firestore auto id by creating a doc ref without id then setDoc; but to keep deterministic, use auto id
+    const ref = doc(this.foldersColRef(uid));
+    const payload = {
+      name: folderData.name,
+      displayOrder: nextOrder,
+      isDefault: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    await setDoc(ref, payload);
+    return this.mapToFolder(ref.id, payload);
   }
 
   async updateFolder(id: string, updates: Partial<Folder>): Promise<Folder> {
-    const folders = this.getStoredFolders();
-    const folderIndex = folders.findIndex(folder => folder.id === id);
-    
-    if (folderIndex === -1) {
-      throw new Error(`Folder with id ${id} not found`);
-    }
+    const uid = this.getUid();
+    const ref = doc(db, this.USERS_COLLECTION, uid, this.FOLDERS_SUBCOLLECTION, id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) throw new Error(`Folder with id ${id} not found`);
+    const current = this.mapToFolder(snap.id, snap.data());
+    if (current.isDefault) throw new Error('Cannot modify default folder');
 
-    // Prevent updating default folder name or isDefault flag
-    if (folders[folderIndex].isDefault) {
-      throw new Error('Cannot modify default folder');
-    }
-
-    const updatedFolder: Folder = {
-      ...folders[folderIndex],
-      ...updates,
-      id: folders[folderIndex].id, // Ensure id doesn't change
-      isDefault: folders[folderIndex].isDefault, // Ensure isDefault doesn't change
-      updatedAt: new Date()
-    };
-
-    folders[folderIndex] = updatedFolder;
-    this.saveToStorage(folders);
-    
-    return updatedFolder;
+    const allowed: any = {};
+    if (typeof updates.name === 'string') allowed.name = updates.name;
+    if (typeof updates.displayOrder === 'number') allowed.displayOrder = updates.displayOrder;
+    allowed.updatedAt = serverTimestamp();
+    await updateDoc(ref, allowed);
+    return { ...current, ...allowed, updatedAt: new Date() } as Folder;
   }
 
   async deleteFolder(id: string): Promise<void> {
-    const folders = this.getStoredFolders();
-    const folder = folders.find(f => f.id === id);
-    
-    if (!folder) {
-      throw new Error(`Folder with id ${id} not found`);
-    }
-
-    if (folder.isDefault) {
-      throw new Error('Cannot delete default folder');
-    }
-
-    const filteredFolders = folders.filter(folder => folder.id !== id);
-    this.saveToStorage(filteredFolders);
+    const uid = this.getUid();
+    const ref = doc(db, this.USERS_COLLECTION, uid, this.FOLDERS_SUBCOLLECTION, id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) throw new Error(`Folder with id ${id} not found`);
+    const current = this.mapToFolder(snap.id, snap.data());
+    if (current.isDefault) throw new Error('Cannot delete default folder');
+    await deleteDoc(ref);
   }
 
   async getFolder(id: string): Promise<Folder | null> {
-    const folders = this.getStoredFolders();
-    return folders.find(folder => folder.id === id) || null;
+    const uid = this.getUid();
+    const ref = doc(db, this.USERS_COLLECTION, uid, this.FOLDERS_SUBCOLLECTION, id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return this.mapToFolder(snap.id, snap.data());
   }
 
   async getAllFolders(): Promise<Folder[]> {
-    return this.getStoredFolders();
+    const uid = this.getUid();
+    return this.fetchAll(uid);
   }
 
   async getDefaultFolder(): Promise<Folder> {
-    const folders = this.getStoredFolders();
-    const defaultFolder = folders.find(f => f.id === this.DEFAULT_FOLDER_ID);
-    
-    if (!defaultFolder) {
-      const newDefaultFolder = this.createDefaultFolder();
-      folders.unshift(newDefaultFolder);
-      this.saveToStorage(folders);
-      return newDefaultFolder;
-    }
-    
-    return defaultFolder;
+    const uid = this.getUid();
+    return this.ensureDefaultFolder(uid);
   }
 
   async reorderFolders(folderIds: string[]): Promise<void> {
-    const folders = this.getStoredFolders();
-    const folderMap = new Map(folders.map(f => [f.id, f]));
-    
-    // Update display order based on the new order
-    const reorderedFolders = folderIds.map((id, index) => {
-      const folder = folderMap.get(id);
-      if (!folder) {
-        throw new Error(`Folder with id ${id} not found`);
-      }
-      
-      return {
-        ...folder,
-        displayOrder: index,
-        updatedAt: new Date()
-      };
+    const uid = this.getUid();
+    const batch = writeBatch(db);
+    folderIds.forEach((id, index) => {
+      const ref = doc(db, this.USERS_COLLECTION, uid, this.FOLDERS_SUBCOLLECTION, id);
+      batch.update(ref, { displayOrder: index, updatedAt: serverTimestamp() });
     });
-    
-    this.saveToStorage(reorderedFolders);
+    await batch.commit();
   }
 
   get folders(): Folder[] {
-    return this.getStoredFolders();
+    // Synchronous getter not meaningful with Firestore; return empty to satisfy interface
+    return [];
   }
 }
 
-export const folderStorageService = new LocalStorageFolderService();
+export const folderStorageService = new FirestoreFolderService();
 

@@ -151,7 +151,7 @@ export interface LessonStorage {
 
 export interface FolderStorage {
   folders: Folder[];
-  saveFolder: (folder: Omit<Folder, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Folder>;
+  saveFolder: (folder: Omit<Folder, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>) => Promise<Folder>;
   updateFolder: (id: string, updates: Partial<Folder>) => Promise<Folder>;
   deleteFolder: (id: string) => Promise<void>;
   getFolder: (id: string) => Promise<Folder | null>;

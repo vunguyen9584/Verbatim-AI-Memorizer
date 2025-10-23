@@ -1,124 +1,160 @@
+import { collection, doc, getDoc, getDocs, query, where, orderBy, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, limit, writeBatch } from 'firebase/firestore';
+import { db } from './firebaseClient';
+import { authService } from './authService';
 import { Lesson, LessonStorage } from '../types';
 
-class LocalStorageLessonService implements LessonStorage {
-  private readonly STORAGE_KEY = 'verbatim_lessons';
-  private readonly DEFAULT_FOLDER_ID = 'default';
+class FirestoreLessonService implements LessonStorage {
+  private readonly USERS_COLLECTION = 'users';
+  private readonly LESSONS_SUBCOLLECTION = 'lessons';
+  private readonly FOLDERS_SUBCOLLECTION = 'folders';
+  private readonly LOCAL_STORAGE_KEY = 'verbatim_lessons';
 
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  private getUid(): string {
+    const user = authService.getUser();
+    if (!user?.uid) throw new Error('Not authenticated');
+    return user.uid;
   }
 
-  private getStoredLessons(): Lesson[] {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      if (!stored) return [];
-      
-      const lessons = JSON.parse(stored);
-      let needsMigration = false;
-      
-      const parsedLessons = lessons.map((lesson: any) => {
-        // Migration: add folderId if it doesn't exist
-        if (!lesson.folderId) {
-          needsMigration = true;
-          return {
-            ...lesson,
-            folderId: this.DEFAULT_FOLDER_ID,
-            createdAt: new Date(lesson.createdAt),
-            updatedAt: new Date(lesson.updatedAt)
-          };
-        }
-        
-        return {
-          ...lesson,
-          createdAt: new Date(lesson.createdAt),
-          updatedAt: new Date(lesson.updatedAt)
-        };
+  private lessonsColRef(uid: string) {
+    return collection(db, this.USERS_COLLECTION, uid, this.LESSONS_SUBCOLLECTION);
+  }
+
+  private toDate(value: any): Date {
+    if (value instanceof Timestamp) return value.toDate();
+    if (value instanceof Date) return value;
+    if (typeof value === 'string' || typeof value === 'number') return new Date(value);
+    return new Date();
+  }
+
+  private mapToLesson(id: string, data: any): Lesson {
+    return {
+      id,
+      title: data.title || '',
+      content: data.content || '',
+      folderId: data.folderId || 'default',
+      createdAt: this.toDate(data.createdAt),
+      updatedAt: this.toDate(data.updatedAt),
+    };
+  }
+
+  private async ensureDefaultFolder(uid: string): Promise<void> {
+    const defaultRef = doc(db, this.USERS_COLLECTION, uid, this.FOLDERS_SUBCOLLECTION, 'default');
+    const snap = await getDoc(defaultRef);
+    if (!snap.exists()) {
+      await setDoc(defaultRef, {
+        name: 'folderManagement.default',
+        displayOrder: 0,
+        isDefault: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
-      
-      // Save migrated data back to storage
-      if (needsMigration) {
-        this.saveToStorage(parsedLessons);
-      }
-      
-      return parsedLessons;
-    } catch (error) {
-      console.error('Error loading lessons from storage:', error);
-      return [];
     }
   }
 
-  private saveToStorage(lessons: Lesson[]): void {
+  private async migrateLocalIfNeeded(uid: string): Promise<void> {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(lessons));
-    } catch (error) {
-      console.error('Error saving lessons to storage:', error);
-      throw new Error('Failed to save lessons to storage');
+      const anySnap = await getDocs(query(this.lessonsColRef(uid), limit(1)));
+      if (!anySnap.empty) return;
+
+      const raw = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+      if (!raw) return;
+      await this.ensureDefaultFolder(uid);
+
+      const localLessons: any[] = JSON.parse(raw);
+      const batch = writeBatch(db);
+      for (const l of localLessons) {
+        const id = l.id || undefined;
+        if (!id) continue;
+        const ref = doc(db, this.USERS_COLLECTION, uid, this.LESSONS_SUBCOLLECTION, id);
+        batch.set(ref, {
+          title: l.title || '',
+          content: l.content || '',
+          folderId: l.folderId || 'default',
+          createdAt: l.createdAt ? new Date(l.createdAt) : serverTimestamp(),
+          updatedAt: l.updatedAt ? new Date(l.updatedAt) : serverTimestamp(),
+        }, { merge: true });
+      }
+
+      await batch.commit();
+      localStorage.removeItem(this.LOCAL_STORAGE_KEY);
+    } catch (e) {
+      console.warn('Lesson migration skipped:', e);
     }
   }
 
   async saveLesson(lessonData: Omit<Lesson, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lesson> {
-    const lessons = this.getStoredLessons();
-    const newLesson: Lesson = {
-      ...lessonData,
-      id: this.generateId(),
-      createdAt: new Date(),
-      updatedAt: new Date()
+    const uid = this.getUid();
+    await this.ensureDefaultFolder(uid);
+    // Create with auto-id
+    const ref = doc(this.lessonsColRef(uid));
+    const payload = {
+      title: lessonData.title,
+      content: lessonData.content,
+      folderId: lessonData.folderId || 'default',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
-
-    lessons.push(newLesson);
-    this.saveToStorage(lessons);
-    
-    return newLesson;
+    await setDoc(ref, payload);
+    return this.mapToLesson(ref.id, payload);
   }
 
   async updateLesson(id: string, updates: Partial<Lesson>): Promise<Lesson> {
-    const lessons = this.getStoredLessons();
-    const lessonIndex = lessons.findIndex(lesson => lesson.id === id);
-    
-    if (lessonIndex === -1) {
-      throw new Error(`Lesson with id ${id} not found`);
-    }
+    const uid = this.getUid();
+    const ref = doc(db, this.USERS_COLLECTION, uid, this.LESSONS_SUBCOLLECTION, id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) throw new Error(`Lesson with id ${id} not found`);
+    const current = this.mapToLesson(snap.id, snap.data());
 
-    const updatedLesson: Lesson = {
-      ...lessons[lessonIndex],
-      ...updates,
-      updatedAt: new Date()
-    };
-
-    lessons[lessonIndex] = updatedLesson;
-    this.saveToStorage(lessons);
-    
-    return updatedLesson;
+    const allowed: any = {};
+    if (typeof updates.title === 'string') allowed.title = updates.title;
+    if (typeof updates.content === 'string') allowed.content = updates.content;
+    if (typeof updates.folderId === 'string') allowed.folderId = updates.folderId;
+    allowed.updatedAt = serverTimestamp();
+    await updateDoc(ref, allowed);
+    return { ...current, ...allowed, updatedAt: new Date() } as Lesson;
   }
 
   async deleteLesson(id: string): Promise<void> {
-    const lessons = this.getStoredLessons();
-    const filteredLessons = lessons.filter(lesson => lesson.id !== id);
-    
-    if (lessons.length === filteredLessons.length) {
-      throw new Error(`Lesson with id ${id} not found`);
-    }
-
-    this.saveToStorage(filteredLessons);
+    const uid = this.getUid();
+    const ref = doc(db, this.USERS_COLLECTION, uid, this.LESSONS_SUBCOLLECTION, id);
+    await deleteDoc(ref);
   }
 
   async getLesson(id: string): Promise<Lesson | null> {
-    const lessons = this.getStoredLessons();
-    return lessons.find(lesson => lesson.id === id) || null;
+    const uid = this.getUid();
+    await this.migrateLocalIfNeeded(uid);
+    const ref = doc(db, this.USERS_COLLECTION, uid, this.LESSONS_SUBCOLLECTION, id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return this.mapToLesson(snap.id, snap.data());
+  }
+
+  // Backward-compatible alias used by App.tsx
+  async getLessonById(id: string): Promise<Lesson | null> {
+    return this.getLesson(id);
   }
 
   async getAllLessons(): Promise<Lesson[]> {
-    return this.getStoredLessons();
+    const uid = this.getUid();
+    await this.migrateLocalIfNeeded(uid);
+    const snap = await getDocs(this.lessonsColRef(uid));
+    const items = snap.docs.map((d) => this.mapToLesson(d.id, d.data()));
+    return items.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
 
   async getLessonsByFolder(folderId: string): Promise<Lesson[]> {
-    const lessons = this.getStoredLessons();
-    return lessons.filter(lesson => lesson.folderId === folderId);
+    const uid = this.getUid();
+    await this.migrateLocalIfNeeded(uid);
+    // Avoid composite index requirement: filter only, sort in memory
+    const qByFolder = query(this.lessonsColRef(uid), where('folderId', '==', folderId));
+    const snap = await getDocs(qByFolder);
+    const items = snap.docs.map((d) => this.mapToLesson(d.id, d.data()));
+    return items.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
 
   get lessons(): Lesson[] {
-    return this.getStoredLessons();
+    return [];
   }
 }
 
-export const lessonStorageService = new LocalStorageLessonService();
+export const lessonStorageService = new FirestoreLessonService();
