@@ -18,6 +18,7 @@ import AuthGate from './components/auth/AuthGate';
 import SyncStatus from './components/common/SyncStatus';
 import { authService } from './services/authService';
 import Loader from './components/common/Loader';
+import { env } from './utils/env';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -170,9 +171,11 @@ const AppContent: React.FC = () => {
             <div className="flex items-center gap-2">
               <button onClick={() => changeLanguage('en')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>EN</button>
               <button onClick={() => changeLanguage('vi')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>VI</button>
-              <button onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)} className="text-gray-500 hover:text-teal-400 transition-colors" aria-label={t('openDebugPanel')}>
-                <BugIcon className="w-6 h-6" />
-              </button>
+              {env.showDebugButton && (
+                <button onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)} className="text-gray-500 hover:text-teal-400 transition-colors" aria-label={t('openDebugPanel')}>
+                  <BugIcon className="w-6 h-6" />
+                </button>
+              )}
             </div>
             <SyncStatus />
           </div>
