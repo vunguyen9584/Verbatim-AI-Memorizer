@@ -167,3 +167,40 @@ export interface ToastMessage {
   duration?: number;
   persistent?: boolean;
 }
+
+// --- AUTHENTICATION TYPES ---
+
+export interface AuthUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  emailVerified: boolean;
+  photoURL: string | null;
+  provider: 'google' | 'email-link' | null;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string; // ISO format YYYY-MM-DD
+  provider: 'google' | 'email-link';
+  createdAt: Date;
+  updatedAt: Date;
+  emailVerified: boolean;
+}
+
+export interface PendingProfile {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  email: string;
+}
+
+export interface AuthState {
+  user: AuthUser | null;
+  profile: UserProfile | null;
+  loading: boolean;
+  error: string | null;
+}

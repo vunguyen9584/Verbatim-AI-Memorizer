@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
-import { LearningMode, Lesson } from './types';
+import { LearningMode, Lesson, AuthUser } from './types';
 import TextInputArea from './components/TextInputArea';
 import ModeSelector from './components/ModeSelector';
 import QuizMode from './components/QuizMode';
@@ -14,10 +14,16 @@ import { BrainCircuitIcon, BugIcon } from './components/common/Icon';
 import DebugPanel from './components/DebugPanel';
 import { ToastProvider, useToast } from './components/common/Toast';
 import { lessonStorageService } from './services/lessonStorageService';
+import AuthGate from './components/auth/AuthGate';
+import SyncStatus from './components/common/SyncStatus';
+import { authService } from './services/authService';
+import Loader from './components/common/Loader';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [text, setText] = useState<string>('');
   const [mode, setMode] = useState<LearningMode | null>(null);
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
@@ -25,6 +31,16 @@ const AppContent: React.FC = () => {
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+
+  // Subscribe to auth state
+  useEffect(() => {
+    const unsubscribe = authService.subscribe((currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handleStartLearning = (event: CustomEvent) => {
@@ -125,6 +141,20 @@ const AppContent: React.FC = () => {
     i18n.changeLanguage(lng);
   };
 
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <Loader />
+      </div>
+    );
+  }
+
+  // Show AuthGate if user is not authenticated
+  if (!user) {
+    return <AuthGate />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
         <header className="flex items-center justify-between mb-6">
@@ -136,12 +166,15 @@ const AppContent: React.FC = () => {
               </Trans>
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => changeLanguage('en')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>EN</button>
-            <button onClick={() => changeLanguage('vi')} className={`px-2 py-1 text-sm rounded ml-2 ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>VI</button>
-            <button onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)} className="text-gray-500 hover:text-teal-400 transition-colors ml-4" aria-label={t('openDebugPanel')}>
-              <BugIcon className="w-6 h-6" />
-            </button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <button onClick={() => changeLanguage('en')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>EN</button>
+              <button onClick={() => changeLanguage('vi')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>VI</button>
+              <button onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)} className="text-gray-500 hover:text-teal-400 transition-colors" aria-label={t('openDebugPanel')}>
+                <BugIcon className="w-6 h-6" />
+              </button>
+            </div>
+            <SyncStatus />
           </div>
         </header>
       
