@@ -121,3 +121,11 @@ export const ChevronRightIcon: React.FC<IconProps> = (props) => (
     <path d="m9 18 6-6-6-6" />
   </svg>
 );
+
+export const SparklesIcon: React.FC<IconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M5 3v4M3 5h4" />
+    <path d="M19 17v4M17 19h4" />
+    <path d="M12 7l1.8 3.8L18 13l-4.2 2.2L12 19l-1.8-3.8L6 13l4.2-2.2L12 7z" />
+  </svg>
+);

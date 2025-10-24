@@ -4,6 +4,7 @@ import { MemoryMethod, MemoryStoryResult, MemoryAcrosticResult } from '../types'
 import { generateMemoryTips } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
+import { SparklesIcon } from './common/Icon';
 
 interface MemorizeTipsModeProps {
   text: string;
@@ -80,7 +81,8 @@ const MemorizeTipsMode: React.FC<MemorizeTipsModeProps> = ({ text }) => {
       </div>
 
       <div className="mt-8">
-        <Button onClick={handleGenerate} variant="primary" className="w-full">
+        <Button onClick={handleGenerate} variant="primary" className="w-full" aria-label={t('memorizeTips.generate')}>
+          <SparklesIcon className="w-5 h-5" aria-hidden="true" />
           {t('memorizeTips.generate')}
         </Button>
       </div>

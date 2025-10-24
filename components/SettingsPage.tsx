@@ -4,7 +4,7 @@ import { settings } from '../utils/settings';
 import Button from './common/Button';
 import { useToast } from './common/Toast';
 import { testGeminiApiKey } from '../services/geminiService';
-import { BrainCircuitIcon } from './common/Icon';
+import { BrainCircuitIcon, SparklesIcon } from './common/Icon';
 import SyncStatus from './common/SyncStatus';
 
 const SettingsPage: React.FC = () => {
@@ -111,7 +111,8 @@ const SettingsPage: React.FC = () => {
               onChange={(e) => { setApiKey(e.target.value); setTestPassed(false); }}
             />
             <div className="flex gap-3">
-              <Button variant="secondary" onClick={handleTest} disabled={isTesting}>
+              <Button variant="secondary" onClick={handleTest} disabled={isTesting} aria-label={isTesting ? t('settings.gemini.testing') : t('settings.gemini.test')}>
+                <SparklesIcon className="w-5 h-5" aria-hidden="true" />
                 {isTesting ? t('settings.gemini.testing') : t('settings.gemini.test')}
               </Button>
               <Button variant="primary" onClick={handleSave} disabled={!testPassed || lastTestedKey !== apiKey.trim()}>{t('settings.save')}</Button>

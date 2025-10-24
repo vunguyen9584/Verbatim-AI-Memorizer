@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LearningMode } from '../types';
 import Card from './common/Card';
 import Button from './common/Button';
+import { SparklesIcon } from './common/Icon';
 
 interface ModeSelectorProps {
   currentMode: LearningMode | null;
@@ -25,6 +26,9 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ currentMode, onSelectMode }
             variant={currentMode === mode ? 'primary' : 'secondary'}
             className="text-sm md:text-base"
           >
+            {(mode === LearningMode.QUIZ || mode === LearningMode.MEMORY_TIPS) && (
+              <SparklesIcon className="w-4 h-4" aria-hidden="true" />
+            )}
             {t(`learningModes.${mode}`)}
           </Button>
         ))}

@@ -5,7 +5,7 @@ import { QuizData, ClozeQuizItem, MCQQuizItem, OrderingQuizItem } from '../types
 import { generateQuizzes } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
-import { CheckCircleIcon, XCircleIcon } from './common/Icon';
+import { CheckCircleIcon, XCircleIcon, SparklesIcon } from './common/Icon';
 
 interface QuizModeProps {
   text: string;
@@ -459,7 +459,8 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         </div>
 
         <div className="mt-8">
-            <Button onClick={handleGenerateQuiz} variant="primary" className="w-full" disabled={selectedQuizTypes.length === 0}>
+            <Button onClick={handleGenerateQuiz} variant="primary" className="w-full" disabled={selectedQuizTypes.length === 0} aria-label={t('quiz.generate')}>
+                <SparklesIcon className="w-5 h-5" aria-hidden="true" />
                 {t('quiz.generate')}
             </Button>
         </div>
