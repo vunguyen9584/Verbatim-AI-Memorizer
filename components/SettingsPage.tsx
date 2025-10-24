@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { settings } from '../utils/settings';
 import Button from './common/Button';
 import { useToast } from './common/Toast';
 import { testGeminiApiKey } from '../services/geminiService';
+import { BrainCircuitIcon } from './common/Icon';
+import SyncStatus from './common/SyncStatus';
 
 const SettingsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const [apiKey, setApiKey] = useState('');
   const [isTesting, setIsTesting] = useState(false);
@@ -67,9 +69,27 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8">
+      <header className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div className="flex items-center">
+          <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+            <Trans i18nKey="headerTitle">
+              Verbatim <span className="text-teal-400">AI</span> Memorizer
+            </Trans>
+          </h1>
+        </div>
+        <div className="flex items-center gap-2 md:gap-4 flex-wrap justify-end">
+          <div className="flex items-center gap-2">
+            <button onClick={() => i18n.changeLanguage('en')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>EN</button>
+            <button onClick={() => i18n.changeLanguage('vi')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>VI</button>
+          </div>
+          <SyncStatus />
+        </div>
+      </header>
+
       <div className="max-w-2xl w-full mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-white">{t('settings.title')}</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl md:text-2xl font-bold text-white">{t('settings.title')}</h2>
           <Button variant="secondary" onClick={goBack}>{t('settings.back')}</Button>
         </div>
 
