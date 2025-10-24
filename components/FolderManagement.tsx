@@ -322,26 +322,30 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
               }`}
             >
               {editingFolder?.id === folder.id ? (
-                <div className="flex gap-2 items-center">
-                  <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    className="flex-grow bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    autoFocus
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSaveEdit();
-                      }
-                    }}
-                  />
-                  <Button onClick={handleSaveEdit} variant="primary" size="sm">
-                    {t('folderManagement.save')}
-                  </Button>
-                  <Button onClick={handleCancelEdit} variant="secondary" size="sm">
-                    {t('folderManagement.cancel')}
-                  </Button>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="flex items-center gap-2 w-full min-w-0">
+                    <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="w-full sm:flex-grow min-w-0 bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      autoFocus
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveEdit();
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button onClick={handleSaveEdit} variant="primary" size="sm" className="flex-1 sm:flex-none">
+                      {t('folderManagement.save')}
+                    </Button>
+                    <Button onClick={handleCancelEdit} variant="secondary" size="sm" className="flex-1 sm:flex-none">
+                      {t('folderManagement.cancel')}
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex justify-between items-center">
