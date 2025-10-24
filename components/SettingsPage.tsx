@@ -3,11 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { settings } from '../utils/settings';
 import Button from './common/Button';
 import { useToast } from './common/Toast';
+import { testGeminiApiKey } from '../services/geminiService';
 
 const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [apiKey, setApiKey] = useState('');
+  const [isTesting, setIsTesting] = useState(false);
+  const [testPassed, setTestPassed] = useState(false);
+  const [lastTestedKey, setLastTestedKey] = useState('');
 
   useEffect(() => {
     const existing = settings.getGeminiApiKey();
@@ -20,6 +24,10 @@ const SettingsPage: React.FC = () => {
       showToast({ type: 'error', message: t('settings.validation.apiKeyEmpty'), persistent: false });
       return;
     }
+    if (!testPassed || lastTestedKey !== trimmed) {
+      showToast({ type: 'error', message: t('settings.validation.testRequired'), persistent: false });
+      return;
+    }
     settings.setGeminiApiKey(trimmed);
     showToast({ type: 'success', message: t('settings.toast.saved'), persistent: false });
   };
@@ -27,7 +35,30 @@ const SettingsPage: React.FC = () => {
   const handleClear = () => {
     settings.clearGeminiApiKey();
     setApiKey('');
+    setTestPassed(false);
+    setLastTestedKey('');
     showToast({ type: 'success', message: t('settings.toast.cleared'), persistent: false });
+  };
+
+  const handleTest = async () => {
+    const trimmed = apiKey.trim();
+    if (!trimmed) {
+      showToast({ type: 'error', message: t('settings.validation.apiKeyEmpty'), persistent: false });
+      return;
+    }
+    try {
+      setIsTesting(true);
+      await testGeminiApiKey(trimmed);
+      setTestPassed(true);
+      setLastTestedKey(trimmed);
+      showToast({ type: 'success', message: t('settings.toast.testSuccess'), persistent: false });
+    } catch (e) {
+      setTestPassed(false);
+      setLastTestedKey('');
+      showToast({ type: 'error', message: t('settings.toast.testFailed'), persistent: false });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const goBack = () => {
@@ -51,10 +82,13 @@ const SettingsPage: React.FC = () => {
               className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               placeholder={t('settings.gemini.placeholder')}
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              onChange={(e) => { setApiKey(e.target.value); setTestPassed(false); }}
             />
             <div className="flex gap-3">
-              <Button variant="primary" onClick={handleSave}>{t('settings.save')}</Button>
+              <Button variant="secondary" onClick={handleTest} disabled={isTesting}>
+                {isTesting ? t('settings.gemini.testing') : t('settings.gemini.test')}
+              </Button>
+              <Button variant="primary" onClick={handleSave} disabled={!testPassed || lastTestedKey !== apiKey.trim()}>{t('settings.save')}</Button>
               <Button variant="secondary" onClick={handleClear}>{t('settings.clear')}</Button>
             </div>
           </div>

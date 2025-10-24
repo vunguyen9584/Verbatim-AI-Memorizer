@@ -169,16 +169,21 @@
     "gemini": {
       "title": "Gemini API Key",
       "description": "This key is stored only in your browser (localStorage) and used for AI features. It is not sent to our servers.",
-      "placeholder": "Enter your Gemini API key"
+      "placeholder": "Enter your Gemini API key",
+      "test": "Test Key",
+      "testing": "Testing..."
     },
     "save": "Save",
     "clear": "Clear",
     "toast": {
       "saved": "Gemini API key saved",
-      "cleared": "Gemini API key cleared"
+      "cleared": "Gemini API key cleared",
+      "testSuccess": "API key is valid",
+      "testFailed": "Invalid API key"
     },
     "validation": {
-      "apiKeyEmpty": "API key cannot be empty"
+      "apiKeyEmpty": "API key cannot be empty",
+      "testRequired": "Please test and validate your API key before saving"
     }
   },
   "folderManagement": {

@@ -169,16 +169,21 @@
     "gemini": {
       "title": "Khóa API Gemini",
       "description": "Khóa này chỉ được lưu trong trình duyệt của bạn (localStorage) và dùng cho các tính năng AI. Khóa không được gửi tới máy chủ của chúng tôi.",
-      "placeholder": "Nhập khóa API Gemini của bạn"
+      "placeholder": "Nhập khóa API Gemini của bạn",
+      "test": "Kiểm tra khóa",
+      "testing": "Đang kiểm tra..."
     },
     "save": "Lưu",
     "clear": "Xóa",
     "toast": {
       "saved": "Đã lưu khóa API Gemini",
-      "cleared": "Đã xóa khóa API Gemini"
+      "cleared": "Đã xóa khóa API Gemini",
+      "testSuccess": "Khóa API hợp lệ",
+      "testFailed": "Khóa API không hợp lệ"
     },
     "validation": {
-      "apiKeyEmpty": "Khóa API không được để trống"
+      "apiKeyEmpty": "Khóa API không được để trống",
+      "testRequired": "Vui lòng kiểm tra và xác nhận khóa API trước khi lưu"
     }
   },
   "folderManagement": {

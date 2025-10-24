@@ -15,6 +15,27 @@ const getAI = () => {
     return new GoogleGenAI({ apiKey });
 };
 
+// Quick validation call to verify a provided API key without saving it
+export const testGeminiApiKey = async (key: string): Promise<void> => {
+    const apiKey = key.trim();
+    if (!apiKey) {
+        throw new Error('settings.validation.apiKeyEmpty');
+    }
+    try {
+        const client = new GoogleGenAI({ apiKey });
+        const res = await client.models.generateContent({
+            model: 'gemini-2.0-flash',
+            contents: 'ping'
+        });
+        // If request resolves without throwing, consider the key valid
+        if (!res || typeof res.text !== 'string') {
+            throw new Error('gemini.quizGenerationError');
+        }
+    } catch (e) {
+        throw e instanceof Error ? e : new Error('gemini.quizGenerationError');
+    }
+};
+
 const quizDataSchema = {
     type: Type.OBJECT,
     properties: {
