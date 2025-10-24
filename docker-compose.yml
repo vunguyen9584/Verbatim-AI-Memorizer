@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  # Đặt tên cho dịch vụ của bạn, ví dụ: 'webapp'
+  webapp:
+    # Tên của container sẽ được tạo ra
+    container_name: memorizer
+    
+    # Xây dựng image từ Dockerfile trong thư mục hiện tại
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    
+    # Ánh xạ cổng: cổng 8080 trên máy của bạn sẽ trỏ tới cổng 80 trong container
+    ports:
+      - "8080:80"
+      
+    # Tự động khởi động lại container trừ khi bạn dừng nó thủ công
+    restart: unless-stopped
