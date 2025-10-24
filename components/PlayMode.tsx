@@ -115,7 +115,7 @@ const PlayMode: React.FC<PlayModeProps> = ({ tokens }) => {
 
       <div ref={controlsRef} className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-            <Button onClick={handlePlayPause} variant="primary" className="w-28">
+            <Button onClick={handlePlayPause} variant="primary" className="w-44 whitespace-nowrap">
                 {isPlaying ? t('playMode.pause') : t('playMode.play')}
             </Button>
             <Button onClick={handleReset} variant="secondary">
