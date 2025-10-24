@@ -130,25 +130,59 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
       return;
     }
 
+    const name = newFolderName.trim();
+    const tempId = `temp-${Date.now()}`;
+    const nextOrder = folders.reduce((max, f) => Math.max(max, f.displayOrder), -1) + 1;
+    const tempFolder: Folder = {
+      id: tempId,
+      name,
+      displayOrder: nextOrder,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isDefault: false,
+    };
+
+    setFolders((prev) => [...prev, tempFolder]);
+    setLessonCounts((prev) => ({ ...prev, [tempId]: 0 }));
+    setNewFolderName('');
+    setIsCreating(false);
+
     try {
-      await folderStorageService.saveFolder({
-        name: newFolderName.trim(),
-        isDefault: false
+      const saved = await folderStorageService.saveFolder({
+        name,
+        isDefault: false,
       });
-      await loadFolders();
-      setNewFolderName('');
-      setIsCreating(false);
-      showToast({
-        type: 'success',
-        message: t('folderManagement.createSuccess')
+
+      setFolders((prev) => {
+        const idx = prev.findIndex((f) => f.id === tempId);
+        if (idx === -1) return prev;
+        const updated = [...prev];
+        updated[idx] = {
+          ...updated[idx],
+          id: saved.id,
+          name: saved.name,
+          displayOrder: saved.displayOrder,
+          createdAt: saved.createdAt,
+          updatedAt: saved.updatedAt,
+          isDefault: saved.isDefault,
+        };
+        return updated;
       });
+
+      setLessonCounts((prev) => {
+        const { [tempId]: _, ...rest } = prev;
+        return { ...rest, [saved.id]: 0 };
+      });
+
+      showToast({ type: 'success', message: t('folderManagement.createSuccess') });
     } catch (error) {
       console.error('Error creating folder:', error);
-      showToast({
-        type: 'error',
-        message: t('folderManagement.createError'),
-        persistent: true
+      setFolders((prev) => prev.filter((f) => f.id !== tempId));
+      setLessonCounts((prev) => {
+        const { [tempId]: _, ...rest } = prev;
+        return rest;
       });
+      showToast({ type: 'error', message: t('folderManagement.createError'), persistent: true });
     }
   };
 
