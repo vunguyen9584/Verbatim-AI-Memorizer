@@ -182,7 +182,8 @@ export const generateQuizzes = async (
     } catch (e) {
         logger.log('GEMINI_ERROR', { type: 'generateQuizzes', error: e });
         console.error("Error generating quizzes:", e);
-        throw new Error(i18n.t('gemini.quizGenerationError'));
+        const message = e instanceof Error ? e.message : i18n.t('gemini.quizGenerationError');
+        throw new Error(message);
     }
 };
 
@@ -356,6 +357,7 @@ export const generateMemoryTips = async (
     } catch (e) {
         logger.log('GEMINI_ERROR', { type: 'generateMemoryTips', error: e, method });
         console.error("Error generating memory tips:", e);
-        throw new Error(i18n.t('gemini.memoryTipsGenerationError'));
+        const message = e instanceof Error ? e.message : i18n.t('gemini.memoryTipsGenerationError');
+        throw new Error(message);
     }
 };
