@@ -101,25 +101,70 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
     }
 
     setIsSubmitting(true);
-    
+    let createdTempId: string | null = null;
     try {
       if (lesson) {
-        await lessonStorageService.updateLesson(lesson.id, {
+        const updatedTemp: Lesson = {
+          id: lesson.id,
           title: title.trim(),
           content: content.trim(),
-          folderId: folderId
+          folderId: folderId,
+          createdAt: lesson.createdAt,
+          updatedAt: new Date(),
+        };
+
+        window.dispatchEvent(
+          new CustomEvent('lesson:update:optimistic', { detail: { lesson: updatedTemp, original: lesson } })
+        );
+
+        const saved = await lessonStorageService.updateLesson(lesson.id, {
+          title: updatedTemp.title,
+          content: updatedTemp.content,
+          folderId: updatedTemp.folderId,
         });
+
+        window.dispatchEvent(
+          new CustomEvent('lesson:update:confirmed', { detail: { saved } })
+        );
       } else {
-        await lessonStorageService.saveLesson({
+        const tempId = `temp-${Date.now()}`;
+        createdTempId = tempId;
+        const tempLesson: Lesson = {
+          id: tempId,
           title: title.trim(),
           content: content.trim(),
-          folderId: folderId
+          folderId: folderId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        window.dispatchEvent(
+          new CustomEvent('lesson:create:optimistic', { detail: { lesson: tempLesson } })
+        );
+
+        const saved = await lessonStorageService.saveLesson({
+          title: tempLesson.title,
+          content: tempLesson.content,
+          folderId: tempLesson.folderId,
         });
+
+        window.dispatchEvent(
+          new CustomEvent('lesson:create:confirmed', { detail: { saved, tempId } })
+        );
       }
-      
+
       onSuccess();
     } catch (error) {
       console.error('Error saving lesson:', error);
+      if (lesson) {
+        window.dispatchEvent(
+          new CustomEvent('lesson:update:revert', { detail: { original: lesson } })
+        );
+      } else {
+        window.dispatchEvent(
+          new CustomEvent('lesson:create:revert', { detail: { tempId: createdTempId } })
+        );
+      }
       onError(lesson ? t('lessonForm.updateError') : t('lessonForm.createError'));
     } finally {
       setIsSubmitting(false);

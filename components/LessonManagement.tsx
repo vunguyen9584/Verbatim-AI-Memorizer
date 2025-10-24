@@ -52,6 +52,72 @@ const LessonManagement: React.FC = () => {
     }
   }, [selectedFolder, loadLessons]);
 
+  // Optimistic lesson events from LessonForm
+  useEffect(() => {
+    const onCreateOptimistic = (e: Event) => {
+      const { lesson: newLesson } = (e as CustomEvent).detail || {};
+      if (!newLesson) return;
+      if (selectedFolder && newLesson.folderId !== selectedFolder.id) return;
+      setLessons((prev) => [newLesson, ...prev].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
+    };
+
+    const onCreateConfirmed = (e: Event) => {
+      const { saved, tempId } = (e as CustomEvent).detail || {};
+      if (!saved || !tempId) return;
+      setLessons((prev) => {
+        const mapped = prev.map((l) => (l.id === tempId ? saved : l));
+        return mapped.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      });
+    };
+
+    const onCreateRevert = (e: Event) => {
+      const { tempId } = (e as CustomEvent).detail || {};
+      if (!tempId) return;
+      setLessons((prev) => prev.filter((l) => l.id !== tempId));
+    };
+
+    const onUpdateOptimistic = (e: Event) => {
+      const { lesson: upd } = (e as CustomEvent).detail || {};
+      if (!upd) return;
+      if (selectedFolder && upd.folderId !== selectedFolder.id) return;
+      setLessons((prev) => {
+        const replaced = prev.map((l) => (l.id === upd.id ? upd : l));
+        return replaced.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      });
+    };
+
+    const onUpdateConfirmed = (e: Event) => {
+      const { saved } = (e as CustomEvent).detail || {};
+      if (!saved) return;
+      setLessons((prev) => {
+        const replaced = prev.map((l) => (l.id === saved.id ? saved : l));
+        return replaced.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      });
+    };
+
+    const onUpdateRevert = (e: Event) => {
+      const { original } = (e as CustomEvent).detail || {};
+      if (!original) return;
+      setLessons((prev) => prev.map((l) => (l.id === original.id ? original : l)));
+    };
+
+    window.addEventListener('lesson:create:optimistic', onCreateOptimistic as EventListener);
+    window.addEventListener('lesson:create:confirmed', onCreateConfirmed as EventListener);
+    window.addEventListener('lesson:create:revert', onCreateRevert as EventListener);
+    window.addEventListener('lesson:update:optimistic', onUpdateOptimistic as EventListener);
+    window.addEventListener('lesson:update:confirmed', onUpdateConfirmed as EventListener);
+    window.addEventListener('lesson:update:revert', onUpdateRevert as EventListener);
+
+    return () => {
+      window.removeEventListener('lesson:create:optimistic', onCreateOptimistic as EventListener);
+      window.removeEventListener('lesson:create:confirmed', onCreateConfirmed as EventListener);
+      window.removeEventListener('lesson:create:revert', onCreateRevert as EventListener);
+      window.removeEventListener('lesson:update:optimistic', onUpdateOptimistic as EventListener);
+      window.removeEventListener('lesson:update:confirmed', onUpdateConfirmed as EventListener);
+      window.removeEventListener('lesson:update:revert', onUpdateRevert as EventListener);
+    };
+  }, [selectedFolder]);
+
   const handleFolderSelect = async (folderId: string) => {
     try {
       const folder = await folderStorageService.getFolder(folderId);
@@ -86,15 +152,21 @@ const LessonManagement: React.FC = () => {
 
   const performDeleteLesson = async () => {
     if (!pendingDeleteLesson) return;
+    const toDelete = pendingDeleteLesson;
+    setPendingDeleteLesson(null);
+
+    // optimistic remove
+    const prev = lessons;
+    setLessons((prevList) => prevList.filter((l) => l.id !== toDelete.id));
+
     try {
-      await lessonStorageService.deleteLesson(pendingDeleteLesson.id);
-      await loadLessons(selectedFolder?.id);
+      await lessonStorageService.deleteLesson(toDelete.id);
       showToast({ type: 'success', message: t('lessonManagement.deleteSuccess') });
     } catch (error) {
       console.error('Error deleting lesson:', error);
+      // revert
+      setLessons(prev);
       showToast({ type: 'error', message: t('lessonManagement.deleteError'), persistent: true });
-    } finally {
-      setPendingDeleteLesson(null);
     }
   };
 
@@ -111,7 +183,7 @@ const LessonManagement: React.FC = () => {
   };
 
   const handleFormSuccess = async () => {
-    await loadLessons(selectedFolder?.id);
+    // No refetch; optimistic updates/events will adjust state
     handleFormClose();
     showToast({
       type: 'success',
@@ -147,6 +219,10 @@ const LessonManagement: React.FC = () => {
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
+      {/* Listen for optimistic lesson events */}
+      {
+        /* Event listeners are attached via effect */
+      }
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div className="flex items-center gap-4">
           <Button 

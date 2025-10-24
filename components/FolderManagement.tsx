@@ -72,24 +72,25 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
       return;
     }
 
+    const newName = editingName.trim();
+    const prev = editingFolder;
+
+    setFolders((prevFolders) =>
+      prevFolders.map((f) => (f.id === prev.id ? { ...f, name: newName, updatedAt: new Date() } : f))
+    );
+
     try {
-      await folderStorageService.updateFolder(editingFolder.id, {
-        name: editingName.trim()
-      });
-      await loadFolders();
+      await folderStorageService.updateFolder(editingFolder.id, { name: newName });
       setEditingFolder(null);
       setEditingName('');
-      showToast({
-        type: 'success',
-        message: t('folderManagement.updateSuccess')
-      });
+      showToast({ type: 'success', message: t('folderManagement.updateSuccess') });
     } catch (error) {
       console.error('Error updating folder:', error);
-      showToast({
-        type: 'error',
-        message: t('folderManagement.updateError'),
-        persistent: true
-      });
+      // revert
+      setFolders((prevFolders) =>
+        prevFolders.map((f) => (f.id === prev.id ? { ...f, name: prev.name } : f))
+      );
+      showToast({ type: 'error', message: t('folderManagement.updateError'), persistent: true });
     }
   };
 
@@ -109,15 +110,25 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
 
   const performDeleteFolder = async () => {
     if (!pendingDeleteFolder) return;
+    const toDelete = pendingDeleteFolder;
+    setPendingDeleteFolder(null);
+
+    // optimistic remove
+    const prevFolders = folders;
+    setFolders((prev) => prev.filter((f) => f.id !== toDelete.id));
+    setLessonCounts((prev) => {
+      const { [toDelete.id]: _, ...rest } = prev;
+      return rest;
+    });
+
     try {
-      await folderStorageService.deleteFolder(pendingDeleteFolder.id);
-      await loadFolders();
+      await folderStorageService.deleteFolder(toDelete.id);
       showToast({ type: 'success', message: t('folderManagement.deleteSuccess') });
     } catch (error) {
       console.error('Error deleting folder:', error);
+      // revert
+      setFolders(prevFolders);
       showToast({ type: 'error', message: t('folderManagement.deleteError'), persistent: true });
-    } finally {
-      setPendingDeleteFolder(null);
     }
   };
 
