@@ -1,15 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Verbatim AI Memorizer">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#7C3AED"/>
-      <stop offset="100%" stop-color="#06B6D4"/>
-    </linearGradient>
-  </defs>
-  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#g)"/>
-  <path d="M74 112l42 48 66-88" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- subtle nodes to hint AI graph; tiny so they don’t clutter at small sizes -->
-  <circle cx="62" cy="78" r="6" fill="#fff" opacity="0.9"/>
-  <circle cx="196" cy="86" r="6" fill="#fff" opacity="0.9"/>
-  <circle cx="178" cy="186" r="6" fill="#fff" opacity="0.9"/>
-  <circle cx="84" cy="194" r="6" fill="#fff" opacity="0.9"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Verbatim AI Memorizer favicon">
+  <path d="M12 5a3 3 0 1 0-5.993 1.003c.005.02.01.04.015.06.132.555.285 1.12.455 1.684A6.995 6.995 0 0 0 12 15a6.995 6.995 0 0 0 5.522-2.253c.17-.564.323-1.13.455-1.684.005-.02.01-.04.015-.06A3 3 0 1 0 12 5Z" />
+  <path d="M12 15v1" />
+  <path d="M12 20v1" />
+  <path d="M15 13.3a6.983 6.983 0 0 1-1.588 3.21" />
+  <path d="M9 13.3a6.983 6.983 0 0 0 1.588 3.21" />
+  <path d="M5 10.3a6.98 6.98 0 0 1 2.383-3.49" />
+  <path d="M19 10.3a6.98 6.98 0 0 0-2.383-3.49" />
 </svg>
