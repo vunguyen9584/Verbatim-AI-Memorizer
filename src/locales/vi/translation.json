@@ -141,7 +141,7 @@
     "acrosticAnalysisPrompt": "Bạn là một chuyên gia phân tích văn bản để tạo ra các từ viết tắt ghi nhớ. Nhiệmvụ của bạn là đọc văn bản sau và trích xuất từ khóa quan trọng nhất từ mỗi câu, từ đại diện cho ý chính của câu đó.\n\nVăn bản:\n---\n{{text}}\n---\n\n Trả về một JSON có mảng 'từ khóa' chứa các từ khóa theo thứ tự của các câu.",
     "acrosticSynthesisPrompt": "Bạn là một chuyên gia trong việc tạo ra các từ viết tắt ghi nhớ. Dựa trên chuỗi ký tự đầu vào, hãy tạo một câu hoàn chỉnh, dễ nhớ và đúng ngữ pháp, trong đó từ đầu tiên bắt đầu bằng ký tự đầu tiên, từ thứ hai bắt đầu bằng ký tự thứ hai, v.v.\n\nChuỗi ký tự: {{initial_letters}}\n\nCâu ghi nhớ của bạn:",
     "memoryTipsGenerationError": "Không thể tạo mẹo ghi nhớ. Mô hình AI có thể tạm thời không khả dụng.",
-    "apiKeyMissing": "Chưa thiết lập khóa API Gemini. Mở Cài đặt và thêm khóa của bạn."
+    "apiKeyMissing": "Thiếu khóa API Gemini. Vào Cài đặt để thêm khóa của bạn để sử dụng tính năng GenAI."
   },
   "lessonManagement": {
     "title": "Quản lý bài học",

@@ -141,7 +141,7 @@
     "acrosticAnalysisPrompt": "You are an expert in text analysis for creating mnemonic acrostics. Your task is to read the following text and extract the most important keyword from each sentence, the one that represents the main idea of that sentence.\n\nText:\n---\n{{text}}\n---\n\nReturn a JSON with a 'keywords' array containing the keywords in the order of the sentences.",
     "acrosticSynthesisPrompt": "You are an expert in creating mnemonic acrostics. Based on the input character string, create a complete, memorable, and grammatically correct sentence where the first word begins with the first character, the second word with the second character, and so on.\n\nCharacter string: {{initial_letters}}\n\nYour mnemonic sentence:",
     "memoryTipsGenerationError": "Failed to generate memory tips. The AI model may be temporarily unavailable.",
-    "apiKeyMissing": "Gemini API key is not set. Open Settings and add your key."
+    "apiKeyMissing": "Gemini API key is missing. Go to Settings to add your key to use GenAI features."
   },
   "lessonManagement": {
     "title": "Lesson Management",
