@@ -217,6 +217,49 @@
   "toast": {
     "close": "Close notification"
   },
+  "introduction": {
+    "title": "Introduction to Verbatim AI Memorizer",
+    "subtitle": "Memorize speeches, scriptures, poems, scripts, definitions, and more with AI-powered practice.",
+    "whoTitle": "Who is this for?",
+    "who1": "Speakers and students memorizing talks or presentations",
+    "who2": "People memorizing scripture, liturgy, or prayers",
+    "who3": "Poetry lovers and song lyric learners",
+    "who4": "Exam prep: definitions, formulas, quotations",
+    "who5": "Actors and performers learning scripts",
+    "howTitle": "How it works",
+    "how1": "Paste any text you want to memorize.",
+    "how2": "Pick a mode: Quiz, Play, Co-Play, or Memory Tips.",
+    "how3": "Practice with smart exercises tailored to your exact text.",
+    "how4": "Save texts as lessons and organize them in folders.",
+    "modes": {
+      "quiz": {
+        "title": "Quiz Mode",
+        "desc": "AI generates practice questions directly from your text.",
+        "b1": "Fill-in-the-Blank",
+        "b2": "Multiple Choice",
+        "b3": "Word Order"
+      },
+      "play": {
+        "title": "Play Mode",
+        "desc": "Autoplay progressive reveal of your text at your pace. Great for review."
+      },
+      "coPlay": {
+        "title": "Co-Play Mode",
+        "desc": "Alternate between the app revealing parts and you typing selected sentences. Highly active recall."
+      },
+      "memoryTips": {
+        "title": "Memory Tips",
+        "desc": "Generate mnemonic stories or acrostics to lock ideas into memory."
+      }
+    },
+    "manageTitle": "Manage your learning",
+    "manage1": "Create, edit, and organize lessons in folders.",
+    "manage2": "Cloud sync with your account; use it across devices.",
+    "manage3": "Clear online/offline sync status for reliability.",
+    "footer": "Your data syncs securely to your account. You can practice on any device.",
+    "back": "Back",
+    "readFull": "Read full introduction"
+  },
   "auth": {
     "authGateTitle": "Welcome to Verbatim AI Memorizer",
     "authGateSubtitle": "Sign in to start memorizing",

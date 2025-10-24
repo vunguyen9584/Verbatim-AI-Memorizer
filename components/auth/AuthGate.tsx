@@ -6,6 +6,7 @@ import Button from '../common/Button';
 import Card from '../common/Card';
 import { BrainCircuitIcon } from '../common/Icon';
 import { useToast } from '../common/Toast';
+import IntroductionContent from '../IntroductionContent';
 
 type TabType = 'google' | 'email';
 
@@ -126,7 +127,7 @@ const AuthGate: React.FC = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex flex-col items-center p-4 gap-6">
         <Card className="max-w-md w-full bg-gray-800 shadow-2xl">
           <div className="p-8">
             <div className="flex justify-end mb-4">
@@ -172,12 +173,14 @@ const AuthGate: React.FC = () => {
             </div>
           </div>
         </Card>
+        <a href="#/introduction" className="text-teal-400 hover:text-teal-300 text-sm">{t('introduction.readFull')}</a>
+        <IntroductionContent compact />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex flex-col items-center p-4 gap-6">
       <Card className="max-w-md w-full bg-gray-800 shadow-2xl">
         <div className="p-8">
           <div className="flex justify-end mb-4">
@@ -356,6 +359,8 @@ const AuthGate: React.FC = () => {
           )}
         </div>
       </Card>
+      <a href="#/introduction" className="text-teal-400 hover:text-teal-300 text-sm">{t('introduction.readFull')}</a>
+      <IntroductionContent compact />
     </div>
   );
 };

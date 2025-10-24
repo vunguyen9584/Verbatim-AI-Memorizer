@@ -217,6 +217,49 @@
   "toast": {
     "close": "Đóng thông báo"
   },
+  "introduction": {
+    "title": "Giới thiệu về Verbatim AI Memorizer",
+    "subtitle": "Ghi nhớ diễn văn, kinh thánh, thơ, kịch bản, định nghĩa... với bài tập do AI hỗ trợ.",
+    "whoTitle": "Phù hợp với ai?",
+    "who1": "Diễn giả và học sinh ghi nhớ bài thuyết trình",
+    "who2": "Người học Kinh Thánh, phụng vụ hoặc lời cầu nguyện",
+    "who3": "Người yêu thơ ca và học lời bài hát",
+    "who4": "Ôn thi: định nghĩa, công thức, trích dẫn",
+    "who5": "Diễn viên, nghệ sĩ học kịch bản",
+    "howTitle": "Cách hoạt động",
+    "how1": "Dán bất kỳ văn bản nào bạn muốn ghi nhớ.",
+    "how2": "Chọn chế độ: Trắc nghiệm, Chơi, Co-Play, hoặc Mẹo ghi nhớ.",
+    "how3": "Luyện tập với bài tập thông minh dựa trên chính văn bản của bạn.",
+    "how4": "Lưu văn bản thành bài học và sắp xếp theo thư mục.",
+    "modes": {
+      "quiz": {
+        "title": "Chế độ Trắc nghiệm",
+        "desc": "AI tạo câu hỏi luyện tập trực tiếp từ văn bản của bạn.",
+        "b1": "Điền vào chỗ trống",
+        "b2": "Trắc nghiệm",
+        "b3": "Sắp xếp từ"
+      },
+      "play": {
+        "title": "Chế độ Chơi",
+        "desc": "Tự động hiển thị dần văn bản theo tốc độ của bạn; phù hợp để ôn tập."
+      },
+      "coPlay": {
+        "title": "Chế độ Co-Play",
+        "desc": "Luân phiên giữa ứng dụng hiện một phần và bạn gõ các câu đã chọn; kích hoạt gợi nhớ tích cực."
+      },
+      "memoryTips": {
+        "title": "Mẹo ghi nhớ",
+        "desc": "Tạo câu chuyện ghi nhớ hoặc câu viết tắt từ văn bản."
+      }
+    },
+    "manageTitle": "Quản lý việc học",
+    "manage1": "Tạo, chỉnh sửa và tổ chức bài học theo thư mục.",
+    "manage2": "Đồng bộ đám mây với tài khoản của bạn; dùng trên nhiều thiết bị.",
+    "manage3": "Trạng thái trực tuyến/ngoại tuyến rõ ràng để tin cậy.",
+    "footer": "Dữ liệu của bạn được đồng bộ an toàn với tài khoản. Bạn có thể luyện tập trên mọi thiết bị.",
+    "back": "Quay lại",
+    "readFull": "Xem toàn bộ phần giới thiệu"
+  },
   "auth": {
     "authGateTitle": "Chào mừng đến với Verbatim AI Memorizer",
     "authGateSubtitle": "Đăng nhập để bắt đầu học",
