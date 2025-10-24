@@ -269,7 +269,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                       <input
                         ref={el => inputRefs.current[index] = el}
                         type="text"
-                        className="bg-gray-700 border-2 border-gray-600 rounded-md p-1 mx-1 text-teal-300 w-32 focus:border-teal-500 focus:outline-none"
+                        className="bg-gray-700 border-2 border-gray-600 rounded-md p-1 mx-1 text-teal-300 w-full sm:w-32 focus:border-teal-500 focus:outline-none"
                         value={userAnswer?.[index] || ''}
                         disabled={isAnswered}
                         onChange={(e) => {
@@ -397,7 +397,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         <div className="space-y-6">
             <div>
                 <label className="block text-lg font-semibold text-gray-200 mb-3">{t('quiz.quizTypes')}</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {ALL_QUIZ_TYPES.map(type => (
                         <button
                             key={type.id}
@@ -435,7 +435,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
             {selectedQuizTypes.includes('cloze_by_token') && (
                 <div>
                     <label className="block text-lg font-semibold text-gray-200 mb-3">{t('quiz.clozeDifficulty')}</label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {(['Easy', 'Medium', 'Hard'] as const).map(level => (
                             <button
                                 key={level}
@@ -474,7 +474,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     
     return (
         <div className="p-4 md:p-8 flex flex-col h-full">
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex justify-between items-start mb-6 flex-col gap-3 sm:flex-row">
             <div>
               <p className="text-sm text-gray-400">{t('quiz.questionProgress', { current: currentQuizIndex + 1, total: quizData.quizzes.length })}</p>
               <h2 className="text-xl font-bold text-teal-400">

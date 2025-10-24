@@ -257,7 +257,7 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h2 className="text-2xl font-bold text-teal-400">{t('folderManagement.title')}</h2>
         <Button onClick={() => setIsCreating(true)} variant="primary">
           {t('folderManagement.createFolder')}

@@ -158,7 +158,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
-        <header className="flex items-center justify-between mb-6">
+        <header className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div className="flex items-center">
             <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
@@ -167,7 +167,7 @@ const AppContent: React.FC = () => {
               </Trans>
             </h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4 flex-wrap justify-end">
             <div className="flex items-center gap-2">
               <button onClick={() => changeLanguage('en')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'en' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>EN</button>
               <button onClick={() => changeLanguage('vi')} className={`px-2 py-1 text-sm rounded ${i18n.language === 'vi' ? 'bg-teal-500 text-white' : 'bg-gray-700'}`}>VI</button>
