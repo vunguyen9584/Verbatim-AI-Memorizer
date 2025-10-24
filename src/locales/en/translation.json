@@ -172,7 +172,8 @@
       "placeholder": "Enter your Gemini API key",
       "test": "Test Key",
       "testing": "Testing...",
-      "testInstruction": "You must test your key before saving. Save is enabled after a successful test."
+      "testInstruction": "You must test your key before saving. Save is enabled after a successful test.",
+      "getKeyInstruction": "Don't have a key? Generate one for free at <1>Google AI Studio</1>."
     },
     "save": "Save",
     "clear": "Clear",

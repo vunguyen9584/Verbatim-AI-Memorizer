@@ -96,6 +96,11 @@ const SettingsPage: React.FC = () => {
         <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
           <h2 className="text-xl font-semibold text-teal-400 mb-2">{t('settings.gemini.title')}</h2>
           <p className="text-gray-400 text-sm mb-2">{t('settings.gemini.description')}</p>
+          <p className="text-gray-400 text-xs mb-2">
+            <Trans i18nKey="settings.gemini.getKeyInstruction">
+              Don't have a key? Generate one at <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-teal-400 underline">Google AI Studio</a>.
+            </Trans>
+          </p>
           <p className="text-gray-400 text-xs mb-4">{t('settings.gemini.testInstruction')}</p>
           <div className="space-y-3">
             <input

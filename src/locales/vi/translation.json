@@ -172,7 +172,8 @@
       "placeholder": "Nhập API key cho Gemini của bạn",
       "test": "Kiểm tra khóa",
       "testing": "Đang kiểm tra...",
-      "testInstruction": "Bạn phải kiểm tra khóa trước khi lưu. Nút Lưu chỉ bật sau khi kiểm tra thành công."
+      "testInstruction": "Bạn phải kiểm tra khóa trước khi lưu. Nút Lưu chỉ bật sau khi kiểm tra thành công.",
+      "getKeyInstruction": "Chưa có key? Tạo ngay API key miễn phí tại <1>Google AI Studio</1>."
     },
     "save": "Lưu",
     "clear": "Xóa",
