@@ -209,7 +209,10 @@
     "validationRequired": "Title and content are required",
     "createError": "Failed to create lesson",
     "updateError": "Failed to update lesson",
-    "unsavedChanges": "You have unsaved changes. Are you sure you want to close?"
+    "unsavedChanges": "You have unsaved changes. Are you sure you want to discard them?",
+    "unsavedTitle": "Discard changes?",
+    "discard": "Discard",
+    "keepEditing": "Keep editing"
   },
   "toast": {
     "close": "Close notification"

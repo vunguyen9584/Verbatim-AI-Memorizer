@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Lesson, Folder } from '../types';
 import { lessonStorageService } from '../services/lessonStorageService';
 import { folderStorageService } from '../services/folderStorageService';
 import Button from './common/Button';
 import { XCircleIcon } from './common/Icon';
+import ConfirmDialog from './common/ConfirmDialog';
 
 interface LessonFormProps {
   lesson?: Lesson | null;
@@ -22,6 +23,11 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
   const [folders, setFolders] = useState<Folder[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingFolders, setIsLoadingFolders] = useState(true);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+
+  // Track initial values to detect unsaved changes accurately
+  const initialRef = useRef<{ title: string; content: string; folderId: string }>({ title: '', content: '', folderId: '' });
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const loadFolders = async () => {
@@ -60,6 +66,26 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
       setFolderId(lesson.folderId);
     }
   }, [lesson]);
+
+  // Initialize initial values once when lesson is loaded or default folder is determined
+  useEffect(() => {
+    if (initializedRef.current) return;
+    if (lesson) {
+      initialRef.current = { title: lesson.title, content: lesson.content, folderId: lesson.folderId };
+      initializedRef.current = true;
+    } else if (!lesson && folderId) {
+      initialRef.current = { title: '', content: '', folderId };
+      initializedRef.current = true;
+    }
+  }, [lesson, folderId]);
+
+  const isDirty = useMemo(() => {
+    return (
+      title !== initialRef.current.title ||
+      content !== initialRef.current.content ||
+      folderId !== initialRef.current.folderId
+    );
+  }, [title, content, folderId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,10 +127,8 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
   };
 
   const handleCancel = () => {
-    if (title.trim() || content.trim()) {
-      if (window.confirm(t('lessonForm.unsavedChanges'))) {
-        onClose();
-      }
+    if (isDirty) {
+      setShowUnsavedDialog(true);
     } else {
       onClose();
     }
@@ -207,6 +231,19 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
             </div>
           </div>
         </form>
+        <ConfirmDialog
+          open={showUnsavedDialog}
+          title={t('lessonForm.unsavedTitle')}
+          message={t('lessonForm.unsavedChanges')}
+          confirmLabel={t('lessonForm.discard')}
+          cancelLabel={t('lessonForm.keepEditing')}
+          onConfirm={() => {
+            setShowUnsavedDialog(false);
+            onClose();
+          }}
+          onCancel={() => setShowUnsavedDialog(false)}
+          showIcon={false}
+        />
       </div>
     </div>
   );

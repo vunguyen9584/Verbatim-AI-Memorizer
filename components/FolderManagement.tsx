@@ -257,7 +257,7 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h2 className="text-2xl font-bold text-teal-400">{t('folderManagement.title')}</h2>
         <Button onClick={() => setIsCreating(true)} variant="primary">
           {t('folderManagement.createFolder')}
@@ -270,32 +270,6 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
           {t('folderManagement.dragDropHint')}
         </p>
       </div>
-
-      {isCreating && (
-        <Card className="mb-4 bg-gray-700/50">
-          <div className="flex gap-2 items-center">
-            <input
-              type="text"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder={t('folderManagement.folderNamePlaceholder')}
-              className="flex-grow bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              autoFocus
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleCreateFolder();
-                }
-              }}
-            />
-            <Button onClick={handleCreateFolder} variant="primary" size="sm">
-              {t('folderManagement.create')}
-            </Button>
-            <Button onClick={() => { setIsCreating(false); setNewFolderName(''); }} variant="secondary" size="sm">
-              {t('folderManagement.cancel')}
-            </Button>
-          </div>
-        </Card>
-      )}
 
       <div className="space-y-4 overflow-y-auto flex-grow">
         {folders.map((folder) => (
@@ -322,41 +296,49 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
               }`}
             >
               {editingFolder?.id === folder.id ? (
-                <div className="flex gap-2 items-center">
-                  <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    className="flex-grow bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    autoFocus
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSaveEdit();
-                      }
-                    }}
-                  />
-                  <Button onClick={handleSaveEdit} variant="primary" size="sm">
-                    {t('folderManagement.save')}
-                  </Button>
-                  <Button onClick={handleCancelEdit} variant="secondary" size="sm">
-                    {t('folderManagement.cancel')}
-                  </Button>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="flex items-center gap-2 w-full min-w-0">
+                    <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="w-full sm:flex-grow min-w-0 bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      autoFocus
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveEdit();
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button onClick={handleSaveEdit} variant="primary" size="sm" className="flex-1 sm:flex-none">
+                      {t('folderManagement.save')}
+                    </Button>
+                    <Button onClick={handleCancelEdit} variant="secondary" size="sm" className="flex-1 sm:flex-none">
+                      {t('folderManagement.cancel')}
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex justify-between items-center">
                   <div
                     onClick={() => onFolderSelect(folder.id)}
-                    className="flex-grow flex items-center gap-3 text-left group cursor-pointer"
+                    className="flex-grow min-w-0 flex items-center gap-3 text-left group cursor-pointer"
                   >
                     <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
-                    <div className="flex-grow">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-white group-hover:text-teal-400 transition-colors">
+                    <div className="flex-grow min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-teal-400 transition-colors flex-1 min-w-0 truncate">
                           {folder.name.startsWith('folderManagement.') ? t(folder.name) : folder.name}
                         </h3>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-teal-400/20 text-teal-300 border border-teal-400/30">
-                          {lessonCounts[folder.id] || 0} {t('folderManagement.lessons')}
+                        <span
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-teal-400/20 text-teal-300 border border-teal-400/30 flex-shrink-0 whitespace-nowrap"
+                          aria-label={`${lessonCounts[folder.id] || 0} ${t('folderManagement.lessons')}`}
+                        >
+                          {lessonCounts[folder.id] || 0}
+                          <span className="hidden sm:inline ml-1">{t('folderManagement.lessons')}</span>
                         </span>
                       </div>
                       <p className="text-gray-500 text-xs">
@@ -396,6 +378,32 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
             </Card>
           </div>
         ))}
+
+        {isCreating && (
+          <Card className="bg-gray-700/50">
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder={t('folderManagement.folderNamePlaceholder')}
+                className="flex-grow bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                autoFocus
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateFolder();
+                  }
+                }}
+              />
+              <Button onClick={handleCreateFolder} variant="primary" size="sm">
+                {t('folderManagement.create')}
+              </Button>
+              <Button onClick={() => { setIsCreating(false); setNewFolderName(''); }} variant="secondary" size="sm">
+                {t('folderManagement.cancel')}
+              </Button>
+            </div>
+          </Card>
+        )}
       </div>
 
       <ConfirmDialog

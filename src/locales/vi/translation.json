@@ -209,7 +209,10 @@
     "validationRequired": "Tiêu đề và nội dung là bắt buộc",
     "createError": "Không thể tạo bài học",
     "updateError": "Không thể cập nhật bài học",
-    "unsavedChanges": "Bạn có thay đổi chưa được lưu. Bạn có chắc chắn muốn đóng?"
+    "unsavedChanges": "Bạn có thay đổi chưa được lưu. Bạn có chắc chắn muốn hủy chúng không?",
+    "unsavedTitle": "Hủy thay đổi?",
+    "discard": "Hủy thay đổi",
+    "keepEditing": "Tiếp tục chỉnh sửa"
   },
   "toast": {
     "close": "Đóng thông báo"

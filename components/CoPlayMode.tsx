@@ -374,7 +374,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         <div className="space-y-4">
           <div>
             <label className="block text-gray-300 mb-2">{t('coPlay.selectMode')}</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button onClick={() => handleModeChange(CoPlayModeType.AppFirstN)} variant={modeOption.type === CoPlayModeType.AppFirstN ? 'primary' : 'secondary'}>{t('coPlay.appFirst')}</Button>
               <Button onClick={() => handleModeChange(CoPlayModeType.UserFirstN)} variant={modeOption.type === CoPlayModeType.UserFirstN ? 'primary' : 'secondary'}>{t('coPlay.userFirst')}</Button>
               <Button onClick={() => handleModeChange(CoPlayModeType.AppFirstRandom)} variant={modeOption.type === CoPlayModeType.AppFirstRandom ? 'primary' : 'secondary'}>{t('coPlay.appFirstRandom')}</Button>
@@ -385,7 +385,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
             <div className="space-y-4">
               <div className="border-b border-gray-700 pb-4">
                 <h3 className="text-lg font-semibold text-gray-300 mb-3">{t('coPlay.sentenceRange')}</h3>
-                <div className="flex items-end gap-2">
+                <div className="flex flex-wrap items-end gap-2">
                   <div>
                     <label htmlFor="start-sentence" className="block text-gray-300 mb-1 text-sm">{t('coPlay.fromSentence')}</label>
                     <input
@@ -411,7 +411,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                       className="w-20 bg-gray-800 border border-gray-600 rounded p-2"
                     />
                   </div>
-                  <div className="text-sm text-gray-400 pb-1">
+                  <div className="text-sm text-gray-400 w-full sm:w-auto pt-1 sm:pt-0 sm:pb-1 sm:ml-auto text-left sm:text-right">
                     ({t('coPlay.totalSentences', { total: totalSentences })})
                   </div>
                 </div>

@@ -147,7 +147,7 @@ const LessonManagement: React.FC = () => {
 
   return (
     <div className="p-4 md:p-8 flex flex-col h-full">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div className="flex items-center gap-4">
           <Button 
             onClick={handleBackToFolders} 
@@ -182,7 +182,7 @@ const LessonManagement: React.FC = () => {
         <div className="space-y-4 overflow-y-auto flex-grow">
           {lessons.map((lesson) => (
             <Card key={lesson.id} className="hover:bg-gray-700/50 transition-colors">
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start gap-3 flex-col sm:flex-row">
                 <div className="flex-grow mr-4">
                   <h3 className="text-lg font-semibold text-white mb-2">{lesson.title}</h3>
                   <p className="text-gray-400 text-sm mb-2 line-clamp-2">
