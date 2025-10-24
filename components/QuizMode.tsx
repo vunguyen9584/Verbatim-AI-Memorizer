@@ -28,7 +28,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
   const [selectedQuizTypes, setSelectedQuizTypes] = useState<string[]>(['cloze_by_token']);
   const [numQuestions, setNumQuestions] = useState(5);
   const [clozeDifficulty, setClozeDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Easy');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // store i18n key or raw text
 
   // Active quiz state
   const [quizData, setQuizData] = useState<QuizData | null>(null);
@@ -102,7 +102,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
   const handleGenerateQuiz = useCallback(async () => {
     if (selectedQuizTypes.length === 0) {
-        setError(t('quiz.selectQuizType'));
+        setError('quiz.selectQuizType');
         return;
     }
     setError(null);
@@ -115,7 +115,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
       // Basic validation for AI response
       if (!data || !Array.isArray(data.quizzes) || data.quizzes.length === 0) {
-        setError(t('quiz.emptyResponseError'));
+        setError('quiz.emptyResponseError');
         setQuizState('setup');
         return;
       }
@@ -123,7 +123,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
       // More specific validation for quiz item integrity.
       for (const quiz of data.quizzes) {
         if (!quiz || !quiz.type || !quiz.stem) {
-             setError(t('quiz.invalidDataError'));
+             setError('quiz.invalidDataError');
              setQuizState('setup');
              return;
         }
@@ -134,7 +134,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
           const canDerive = (mcq as any).blanks?.[0]?.answer_text && Array.isArray(mcq.options);
           
           if (!hasIndex && !canDerive) {
-            setError(t('quiz.noAnswerError'));
+            setError('quiz.noAnswerError');
             setQuizState('setup');
             console.warn("Invalid MCQ item from AI:", mcq);
             return;
@@ -145,7 +145,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
       setQuizData(data);
       setQuizState('active');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('quiz.generationError'));
+      setError(err instanceof Error ? err.message : 'quiz.generationError');
       console.error(err);
       setQuizState('setup');
     }
@@ -392,7 +392,11 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         <h2 className="text-2xl font-bold text-teal-400 mb-2 text-center">{t('quiz.setupTitle')}</h2>
         <p className="text-gray-400 mb-6 text-center">{t('quiz.setupPrompt')}</p>
 
-        {error && <div className="bg-red-900/50 text-red-300 p-3 rounded-lg mb-4 text-center">{error}</div>}
+        {error && (
+          <div className="bg-red-900/50 text-red-300 p-3 rounded-lg mb-4 text-center">
+            {/^[-_a-zA-Z0-9.]+$/.test(error) ? t(error) : error}
+          </div>
+        )}
 
         <div className="space-y-6">
             <div>

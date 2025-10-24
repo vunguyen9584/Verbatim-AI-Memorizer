@@ -9,7 +9,8 @@ import { settings } from '../utils/settings';
 const getAI = () => {
     const apiKey = settings.getGeminiApiKey();
     if (!apiKey) {
-        throw new Error(i18n.t('gemini.apiKeyMissing'));
+        // Throw i18n key so UI can translate reactively on language change
+        throw new Error('gemini.apiKeyMissing');
     }
     return new GoogleGenAI({ apiKey });
 };
@@ -171,9 +172,9 @@ export const generateQuizzes = async (
             if (quiz.type === 'cloze_by_token') {
                 // Ensure fill-in-the-blank questions have surrounding context.
                 if (!quiz.context_before && !quiz.context_after) {
-                    const errorMsg = i18n.t('gemini.clozeContextError');
-                    logger.log('GEMINI_VALIDATION_ERROR', { type: 'generateQuizzes', error: errorMsg, quiz });
-                    throw new Error(errorMsg);
+                    const errorKey = 'gemini.clozeContextError';
+                    logger.log('GEMINI_VALIDATION_ERROR', { type: 'generateQuizzes', error: errorKey, quiz });
+                    throw new Error(errorKey);
                 }
             }
         }
@@ -182,8 +183,8 @@ export const generateQuizzes = async (
     } catch (e) {
         logger.log('GEMINI_ERROR', { type: 'generateQuizzes', error: e });
         console.error("Error generating quizzes:", e);
-        const message = e instanceof Error ? e.message : i18n.t('gemini.quizGenerationError');
-        throw new Error(message);
+        const messageKey = e instanceof Error ? e.message : 'gemini.quizGenerationError';
+        throw new Error(messageKey);
     }
 };
 
@@ -357,7 +358,7 @@ export const generateMemoryTips = async (
     } catch (e) {
         logger.log('GEMINI_ERROR', { type: 'generateMemoryTips', error: e, method });
         console.error("Error generating memory tips:", e);
-        const message = e instanceof Error ? e.message : i18n.t('gemini.memoryTipsGenerationError');
-        throw new Error(message);
+        const messageKey = e instanceof Error ? e.message : 'gemini.memoryTipsGenerationError';
+        throw new Error(messageKey);
     }
 };

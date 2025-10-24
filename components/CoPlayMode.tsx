@@ -39,7 +39,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   }, [totalSentences]);
   const [plan, setPlan] = useState<CoPlayPlan | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // store i18n key or raw text
   const [timelineIndex, setTimelineIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
   const [isPaused, setIsPaused] = useState(true);
@@ -88,7 +88,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
         setRevealedTokenIndex(firstPauseStartToken - 1);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('coPlay.planGenerationError'));
+      setError(err instanceof Error ? err.message : 'coPlay.planGenerationError');
     } finally {
       setLoading(false);
     }
@@ -462,13 +462,17 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           <Button onClick={handleStart} variant="primary" size="lg">{t('coPlay.start')}</Button>
         </div>
         {loading && <Loader text={t('coPlay.planningSession')} />}
-        {error && <div className="p-4 mt-4 text-center text-red-400 bg-red-900/20 rounded">{error}</div>}
+        {error && (
+          <div className="p-4 mt-4 text-center text-red-400 bg-red-900/20 rounded">
+            {/^[-_a-zA-Z0-9.]+$/.test(error) ? t(error) : error}
+          </div>
+        )}
       </div>
     );
   }
 
   if (loading) return <Loader text={t('coPlay.planningSession')} />;
-  if (error) return <div className="p-8 text-center text-red-400">{error} <Button onClick={fetchPlan} className="mt-4">{t('coPlay.tryAgain')}</Button></div>;
+  if (error) return <div className="p-8 text-center text-red-400">{/^[-_a-zA-Z0-9.]+$/.test(error) ? t(error) : error} <Button onClick={fetchPlan} className="mt-4">{t('coPlay.tryAgain')}</Button></div>;
   if (!plan || plan.timeline.length === 0) return <div className="p-8 text-center text-gray-400">{t('coPlay.planCreationError')}</div>;
 
   const sentencesToType = currentTimelineItem?.pause_require[0]?.user_sentences_to_type;

@@ -16,7 +16,7 @@ const MemorizeTipsMode: React.FC<MemorizeTipsModeProps> = ({ text }) => {
   const [modeState, setModeState] = useState<ModeState>('setup');
   const [selectedMethod, setSelectedMethod] = useState<MemoryMethod>(MemoryMethod.STORY);
   const [result, setResult] = useState<MemoryStoryResult | MemoryAcrosticResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // store i18n key or raw text
 
   const handleGenerate = useCallback(async () => {
     setError(null);
@@ -27,7 +27,7 @@ const MemorizeTipsMode: React.FC<MemorizeTipsModeProps> = ({ text }) => {
       setResult(data);
       setModeState('result');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('memorizeTips.unknownError'));
+      setError(err instanceof Error ? err.message : 'memorizeTips.unknownError');
       setModeState('setup');
     }
   }, [text, selectedMethod, t]);
@@ -43,7 +43,11 @@ const MemorizeTipsMode: React.FC<MemorizeTipsModeProps> = ({ text }) => {
       <h2 className="text-2xl font-bold text-teal-400 mb-2 text-center">{t('memorizeTips.title')}</h2>
       <p className="text-gray-400 mb-6 text-center">{t('memorizeTips.prompt')}</p>
 
-      {error && <div className="bg-red-900/50 text-red-300 p-3 rounded-lg mb-4 text-center">{error}</div>}
+      {error && (
+        <div className="bg-red-900/50 text-red-300 p-3 rounded-lg mb-4 text-center">
+          {/^[-_a-zA-Z0-9.]+$/.test(error) ? t(error) : error}
+        </div>
+      )}
 
       <div className="space-y-6">
         <div>
