@@ -20,6 +20,7 @@ import { authService } from './services/authService';
 import Loader from './components/common/Loader';
 import { env } from './utils/env';
 import IntroductionPage from './components/IntroductionPage';
+import SettingsPage from './components/SettingsPage';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -44,10 +45,14 @@ const AppContent: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Simple hash-based route for Introduction page
+  // Simple hash-based routes for special pages
   const [showIntro, setShowIntro] = useState<boolean>(window.location.hash === '#/introduction');
+  const [showSettings, setShowSettings] = useState<boolean>(window.location.hash === '#/settings');
   useEffect(() => {
-    const onHash = () => setShowIntro(window.location.hash === '#/introduction');
+    const onHash = () => {
+      setShowIntro(window.location.hash === '#/introduction');
+      setShowSettings(window.location.hash === '#/settings');
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
@@ -154,6 +159,10 @@ const AppContent: React.FC = () => {
   // Show loading state while checking auth
   if (showIntro) {
     return <IntroductionPage />;
+  }
+
+  if (showSettings) {
+    return <SettingsPage />;
   }
 
   // Show loading state while checking auth

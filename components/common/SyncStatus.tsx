@@ -159,6 +159,15 @@ const SyncStatus: React.FC = () => {
             <div className="p-2">
               <button
                 onClick={() => {
+                  window.location.hash = '#/settings';
+                  setShowDropdown(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-teal-400 hover:bg-gray-700 rounded transition-colors"
+              >
+                Settings
+              </button>
+              <button
+                onClick={() => {
                   window.location.hash = '#/introduction';
                   setShowDropdown(false);
                 }}

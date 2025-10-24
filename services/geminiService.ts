@@ -3,9 +3,16 @@ import i18n from 'i18next';
 import { QuizData, CoPlayPlan, CoPlayModeOption, CoPlayModeType, StoryElements, AcrosticKeywords, MemoryStoryResult, MemoryAcrosticResult, MemoryMethod } from '../types';
 import { logger } from '../utils/debugLogger';
 import { parseSentences } from '../utils/sentenceParser';
+import { settings } from '../utils/settings';
 
-// Fix: Initialize the GoogleGenAI client to interact with the Gemini API.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize the GoogleGenAI client with the user-provided API key from settings
+const getAI = () => {
+    const apiKey = settings.getGeminiApiKey();
+    if (!apiKey) {
+        throw new Error('Gemini API key is not set. Open Settings and add your key.');
+    }
+    return new GoogleGenAI({ apiKey });
+};
 
 const quizDataSchema = {
     type: Type.OBJECT,
@@ -144,7 +151,7 @@ export const generateQuizzes = async (
     logger.log('GEMINI_REQUEST', { type: 'generateQuizzes', prompt, options });
     
     try {
-        const response = await ai.models.generateContent({
+        const response = await getAI().models.generateContent({
             model,
             contents: prompt,
             config: {
@@ -306,7 +313,7 @@ export const generateMemoryTips = async (
         // Step 1: Analysis
         logger.log('GEMINI_REQUEST', { type: 'memory_analysis', prompt: analysisPrompt, method });
 
-        const analysisResponse = await ai.models.generateContent({
+        const analysisResponse = await getAI().models.generateContent({
             model,
             contents: analysisPrompt,
             config: {
@@ -332,7 +339,7 @@ export const generateMemoryTips = async (
 
         logger.log('GEMINI_REQUEST', { type: 'memory_synthesis', prompt: finalPrompt, method });
 
-        const synthesisResponse = await ai.models.generateContent({
+        const synthesisResponse = await getAI().models.generateContent({
             model,
             contents: finalPrompt,
         });
