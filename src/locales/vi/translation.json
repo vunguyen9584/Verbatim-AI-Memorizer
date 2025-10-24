@@ -299,4 +299,8 @@
     "authenticationFailed": "Xác thực thất bại. Vui lòng thử lại.",
     "errorSendingLink": "Không thể gửi liên kết kích hoạt. Vui lòng thử lại."
   }
+  ,
+  "menu": {
+    "about": "Giới thiệu"
+  }
 }

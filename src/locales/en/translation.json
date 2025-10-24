@@ -299,4 +299,8 @@
     "authenticationFailed": "Authentication failed. Please try again.",
     "errorSendingLink": "Failed to send activation link. Please try again."
   }
+  ,
+  "menu": {
+    "about": "About"
+  }
 }
