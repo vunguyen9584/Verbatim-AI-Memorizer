@@ -271,32 +271,6 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
         </p>
       </div>
 
-      {isCreating && (
-        <Card className="mb-4 bg-gray-700/50">
-          <div className="flex gap-2 items-center">
-            <input
-              type="text"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder={t('folderManagement.folderNamePlaceholder')}
-              className="flex-grow bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              autoFocus
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleCreateFolder();
-                }
-              }}
-            />
-            <Button onClick={handleCreateFolder} variant="primary" size="sm">
-              {t('folderManagement.create')}
-            </Button>
-            <Button onClick={() => { setIsCreating(false); setNewFolderName(''); }} variant="secondary" size="sm">
-              {t('folderManagement.cancel')}
-            </Button>
-          </div>
-        </Card>
-      )}
-
       <div className="space-y-4 overflow-y-auto flex-grow">
         {folders.map((folder) => (
           <div
@@ -404,6 +378,32 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
             </Card>
           </div>
         ))}
+
+        {isCreating && (
+          <Card className="bg-gray-700/50">
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder={t('folderManagement.folderNamePlaceholder')}
+                className="flex-grow bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                autoFocus
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateFolder();
+                  }
+                }}
+              />
+              <Button onClick={handleCreateFolder} variant="primary" size="sm">
+                {t('folderManagement.create')}
+              </Button>
+              <Button onClick={() => { setIsCreating(false); setNewFolderName(''); }} variant="secondary" size="sm">
+                {t('folderManagement.cancel')}
+              </Button>
+            </div>
+          </Card>
+        )}
       </div>
 
       <ConfirmDialog
