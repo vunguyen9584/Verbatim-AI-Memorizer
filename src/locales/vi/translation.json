@@ -171,7 +171,8 @@
       "description": "Khóa này chỉ được lưu trong trình duyệt của bạn (localStorage) và dùng cho các tính năng AI. Khóa không được gửi tới máy chủ của chúng tôi.",
       "placeholder": "Nhập khóa API Gemini của bạn",
       "test": "Kiểm tra khóa",
-      "testing": "Đang kiểm tra..."
+      "testing": "Đang kiểm tra...",
+      "testInstruction": "Bạn phải kiểm tra khóa trước khi lưu. Nút Lưu chỉ bật sau khi kiểm tra thành công."
     },
     "save": "Lưu",
     "clear": "Xóa",

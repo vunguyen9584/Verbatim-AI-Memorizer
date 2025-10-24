@@ -75,7 +75,8 @@ const SettingsPage: React.FC = () => {
 
         <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
           <h2 className="text-xl font-semibold text-teal-400 mb-2">{t('settings.gemini.title')}</h2>
-          <p className="text-gray-400 text-sm mb-4">{t('settings.gemini.description')}</p>
+          <p className="text-gray-400 text-sm mb-2">{t('settings.gemini.description')}</p>
+          <p className="text-gray-400 text-xs mb-4">{t('settings.gemini.testInstruction')}</p>
           <div className="space-y-3">
             <input
               type="password"

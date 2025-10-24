@@ -171,7 +171,8 @@
       "description": "This key is stored only in your browser (localStorage) and used for AI features. It is not sent to our servers.",
       "placeholder": "Enter your Gemini API key",
       "test": "Test Key",
-      "testing": "Testing..."
+      "testing": "Testing...",
+      "testInstruction": "You must test your key before saving. Save is enabled after a successful test."
     },
     "save": "Save",
     "clear": "Clear",
