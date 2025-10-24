@@ -347,16 +347,20 @@ const FolderManagement: React.FC<FolderManagementProps> = ({ onFolderSelect }) =
                 <div className="flex justify-between items-center">
                   <div
                     onClick={() => onFolderSelect(folder.id)}
-                    className="flex-grow flex items-center gap-3 text-left group cursor-pointer"
+                    className="flex-grow min-w-0 flex items-center gap-3 text-left group cursor-pointer"
                   >
                     <FolderIcon className="w-5 h-5 text-teal-400 flex-shrink-0" />
-                    <div className="flex-grow">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-white group-hover:text-teal-400 transition-colors">
+                    <div className="flex-grow min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-teal-400 transition-colors flex-1 min-w-0 truncate">
                           {folder.name.startsWith('folderManagement.') ? t(folder.name) : folder.name}
                         </h3>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-teal-400/20 text-teal-300 border border-teal-400/30">
-                          {lessonCounts[folder.id] || 0} {t('folderManagement.lessons')}
+                        <span
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-teal-400/20 text-teal-300 border border-teal-400/30 flex-shrink-0 whitespace-nowrap"
+                          aria-label={`${lessonCounts[folder.id] || 0} ${t('folderManagement.lessons')}`}
+                        >
+                          {lessonCounts[folder.id] || 0}
+                          <span className="hidden sm:inline ml-1">{t('folderManagement.lessons')}</span>
                         </span>
                       </div>
                       <p className="text-gray-500 text-xs">
