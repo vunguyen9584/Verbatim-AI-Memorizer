@@ -68,14 +68,14 @@
   },
   "learningModes": {
     "Quiz": "Trắc nghiệm",
-    "Play": "Chơi",
-    "Co-Play": "Co-Play",
+    "Play": "Chạy chữ",
+    "Co-Play": "Tương tác",
     "Memory Tips": "Mẹo ghi nhớ"
   },
   "playMode": {
     "title": "Chế độ chơi",
     "pause": "Tạm dừng",
-    "play": "Chơi",
+    "play": "Bắt đầu chạy",
     "reset": "Đặt lại",
     "speedWPM": "Tốc độ (WPM):"
   },
