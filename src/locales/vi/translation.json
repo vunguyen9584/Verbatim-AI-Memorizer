@@ -167,9 +167,9 @@
     "title": "Cài đặt",
     "back": "Quay lại",
     "gemini": {
-      "title": "Khóa API Gemini",
-      "description": "Khóa này chỉ được lưu trong trình duyệt của bạn (localStorage) và dùng cho các tính năng AI. Khóa không được gửi tới máy chủ của chúng tôi.",
-      "placeholder": "Nhập khóa API Gemini của bạn",
+      "title": "API key của Gemini",
+      "description": "API key này chỉ được lưu trong trình duyệt của bạn và dùng cho các tính năng AI. Khóa không được gửi tới máy chủ của chúng tôi.",
+      "placeholder": "Nhập API key cho Gemini của bạn",
       "test": "Kiểm tra khóa",
       "testing": "Đang kiểm tra...",
       "testInstruction": "Bạn phải kiểm tra khóa trước khi lưu. Nút Lưu chỉ bật sau khi kiểm tra thành công."

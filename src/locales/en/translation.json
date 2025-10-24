@@ -168,7 +168,7 @@
     "back": "Back",
     "gemini": {
       "title": "Gemini API Key",
-      "description": "This key is stored only in your browser (localStorage) and used for AI features. It is not sent to our servers.",
+      "description": "This key is stored only in your browser and used for AI features. It is not sent to our servers.",
       "placeholder": "Enter your Gemini API key",
       "test": "Test Key",
       "testing": "Testing...",
