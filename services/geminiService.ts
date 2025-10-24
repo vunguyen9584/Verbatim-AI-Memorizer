@@ -9,7 +9,7 @@ import { settings } from '../utils/settings';
 const getAI = () => {
     const apiKey = settings.getGeminiApiKey();
     if (!apiKey) {
-        throw new Error('Gemini API key is not set. Open Settings and add your key.');
+        throw new Error(i18n.t('gemini.apiKeyMissing'));
     }
     return new GoogleGenAI({ apiKey });
 };

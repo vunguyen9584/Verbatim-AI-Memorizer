@@ -140,7 +140,8 @@
     "storySynthesisPrompt": "Bạn là một người kể chuyện sáng tạo chuyên về những câu chuyện ghi nhớ. Dựa trên danh sách các yếu-tố hình ảnh được sắp xếp theo thứ tự sau đây, hãy tạo một câu chuyện ngắn, vô lý, hài hước và sống động để kết nối tất cả chúng lại với nhau. Câu chuyện phải dễ hình dung để giúp người dùng ghi nhớ thứ tự của các yếu tố.\n\nYếu tố hình ảnh:\n{{json_elements}}\n\nCâu chuyện ghi nhớ của bạn:",
     "acrosticAnalysisPrompt": "Bạn là một chuyên gia phân tích văn bản để tạo ra các từ viết tắt ghi nhớ. Nhiệmvụ của bạn là đọc văn bản sau và trích xuất từ khóa quan trọng nhất từ mỗi câu, từ đại diện cho ý chính của câu đó.\n\nVăn bản:\n---\n{{text}}\n---\n\n Trả về một JSON có mảng 'từ khóa' chứa các từ khóa theo thứ tự của các câu.",
     "acrosticSynthesisPrompt": "Bạn là một chuyên gia trong việc tạo ra các từ viết tắt ghi nhớ. Dựa trên chuỗi ký tự đầu vào, hãy tạo một câu hoàn chỉnh, dễ nhớ và đúng ngữ pháp, trong đó từ đầu tiên bắt đầu bằng ký tự đầu tiên, từ thứ hai bắt đầu bằng ký tự thứ hai, v.v.\n\nChuỗi ký tự: {{initial_letters}}\n\nCâu ghi nhớ của bạn:",
-    "memoryTipsGenerationError": "Không thể tạo mẹo ghi nhớ. Mô hình AI có thể tạm thời không khả dụng."
+    "memoryTipsGenerationError": "Không thể tạo mẹo ghi nhớ. Mô hình AI có thể tạm thời không khả dụng.",
+    "apiKeyMissing": "Chưa thiết lập khóa API Gemini. Mở Cài đặt và thêm khóa của bạn."
   },
   "lessonManagement": {
     "title": "Quản lý bài học",
@@ -161,6 +162,24 @@
     "backToLessonsShort": "Danh sách",
     "editLesson": "Chỉnh sửa bài học",
     "backToFolders": "Về danh sách thư mục"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "back": "Quay lại",
+    "gemini": {
+      "title": "Khóa API Gemini",
+      "description": "Khóa này chỉ được lưu trong trình duyệt của bạn (localStorage) và dùng cho các tính năng AI. Khóa không được gửi tới máy chủ của chúng tôi.",
+      "placeholder": "Nhập khóa API Gemini của bạn"
+    },
+    "save": "Lưu",
+    "clear": "Xóa",
+    "toast": {
+      "saved": "Đã lưu khóa API Gemini",
+      "cleared": "Đã xóa khóa API Gemini"
+    },
+    "validation": {
+      "apiKeyEmpty": "Khóa API không được để trống"
+    }
   },
   "folderManagement": {
     "title": "Danh sách thư mục",
@@ -301,6 +320,7 @@
   }
   ,
   "menu": {
-    "about": "Giới thiệu"
+    "about": "Giới thiệu",
+    "settings": "Cài đặt"
   }
 }

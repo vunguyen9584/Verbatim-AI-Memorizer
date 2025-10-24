@@ -164,7 +164,7 @@ const SyncStatus: React.FC = () => {
                 }}
                 className="w-full text-left px-4 py-2 text-sm text-teal-400 hover:bg-gray-700 rounded transition-colors"
               >
-                Settings
+                {t('menu.settings')}
               </button>
               <button
                 onClick={() => {
