@@ -570,13 +570,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
               </Button>
             </div>
             <div class="flex gap-2">
-              <Button type="submit" variant="primary" class="flex-1 sm:flex-none">
-            {t('coPlay.continue')}
-          </Button>
-          <Button onClick={handleShowAnswer} variant="secondary" class="flex-1 sm:flex-none">
-          {t('coPlay.showAnswer')}
-          </Button>
-          </div>
+              <Button type="submit" variant="primary" size="sm">
+                {t('coPlay.continue')}
+              </Button>
+              <Button onClick={handleShowAnswer} variant="secondary" size="sm">
+                {t('coPlay.showAnswer')}
+              </Button>
+            </div>
           </form>
           {hint && (
             <div class="mt-3 text-center text-sm text-gray-400">
