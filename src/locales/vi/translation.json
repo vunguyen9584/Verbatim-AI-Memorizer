@@ -9,19 +9,19 @@
     "planGenerationError": "Không thể tạo kế hoạch Co-Play. Vui lòng thử lại.",
     "setupTitle": "Cài đặt chế độ Co-Play",
     "selectMode": "Chọn chế độ:",
-    "appFirst": "Máy đọc trước",
-    "userFirst": "Bạn đọc trước",
-    "appFirstRandom": "Máy đọc trước (Ngẫu nhiên)",
-    "userFirstRandom": "Bạn đọc trước (Ngẫu nhiên)",
+    "appFirst": "Ứng dụng trước",
+    "userFirst": "Bạn gõ trước",
+    "appFirstRandom": "Ứng dụng trước (ngẫu nhiên)",
+    "userFirstRandom": "Bạn gõ trước (ngẫu nhiên)",
     "sentenceRange": "Phạm vi câu",
     "fromSentence": "Từ câu",
     "toSentence": "Đến câu",
     "to": "đến",
     "totalSentences": "Tổng số: {{total}} câu",
-    "appSentences": "Số câu máy đọc:",
+    "appSentences": "Số câu ứng dụng hiển thị:",
     "allSentences": "Tất cả các câu",
     "all": "Tất cả",
-    "userSentences": "Số câu bạn đọc:",
+    "userSentences": "Số câu bạn gõ:",
     "start": "Bắt đầu",
     "planningSession": "Đang lập kế hoạch cho buổi học của bạn...",
     "tryAgain": "Thử lại",
@@ -243,47 +243,47 @@
     "close": "Đóng thông báo"
   },
   "introduction": {
-    "title": "Giới thiệu về Verbatim AI Memorizer",
-    "subtitle": "Ghi nhớ diễn văn, kinh thánh, thơ, kịch bản, định nghĩa... với bài tập do AI hỗ trợ.",
-    "whoTitle": "Phù hợp với ai?",
-    "who1": "Diễn giả và học sinh ghi nhớ bài thuyết trình",
-    "who2": "Người học Kinh Thánh, phụng vụ hoặc lời cầu nguyện",
-    "who3": "Người yêu thơ ca và học lời bài hát",
+    "title": "Giới thiệu Verbatim AI Memorizer",
+    "subtitle": "Ghi nhớ bài phát biểu, Kinh Thánh, thơ, kịch bản, định nghĩa... với AI.",
+    "whoTitle": "Dành cho ai",
+    "who1": "Diễn giả, học sinh ôn thuyết trình",
+    "who2": "Người học Kinh Thánh, phụng vụ, cầu nguyện",
+    "who3": "Người yêu thơ, học lời bài hát",
     "who4": "Ôn thi: định nghĩa, công thức, trích dẫn",
     "who5": "Diễn viên, nghệ sĩ học kịch bản",
     "howTitle": "Cách hoạt động",
-    "how1": "Dán bất kỳ văn bản nào bạn muốn ghi nhớ.",
-    "how2": "Chọn chế độ: Trắc nghiệm, Chơi, Co-Play, hoặc Mẹo ghi nhớ.",
-    "how3": "Luyện tập với bài tập thông minh dựa trên chính văn bản của bạn.",
-    "how4": "Lưu văn bản thành bài học và sắp xếp theo thư mục.",
+    "how1": "Dán văn bản bạn muốn ghi nhớ.",
+    "how2": "Chọn chế độ: Trắc nghiệm, Chạy chữ, Co-Play hoặc Mẹo ghi nhớ.",
+    "how3": "Luyện tập với bài tập thông minh đúng theo nội dung của bạn.",
+    "how4": "Lưu thành Bài học và sắp xếp theo Thư mục.",
     "modes": {
       "quiz": {
         "title": "Chế độ Trắc nghiệm",
-        "desc": "AI tạo câu hỏi luyện tập trực tiếp từ văn bản của bạn.",
+        "desc": "AI tạo bài tập trực tiếp từ văn bản của bạn.",
         "b1": "Điền vào chỗ trống",
         "b2": "Trắc nghiệm",
         "b3": "Sắp xếp từ"
       },
       "play": {
-        "title": "Chế độ Chơi",
-        "desc": "Tự động hiển thị dần văn bản theo tốc độ của bạn; phù hợp để ôn tập."
+        "title": "Chế độ Chạy chữ",
+        "desc": "Tự động hiện dần nội dung theo tốc độ bạn chọn; rất hợp để ôn tập."
       },
       "coPlay": {
-        "title": "Chế độ Co-Play",
-        "desc": "Luân phiên giữa ứng dụng hiện một phần và bạn gõ các câu đã chọn; kích hoạt gợi nhớ tích cực."
+        "title": "Chế độ Tương tác",
+        "desc": "Luân phiên ứng dụng hiện nội dung và bạn gõ các câu đã chọn; tăng cường gợi nhớ chủ động."
       },
       "memoryTips": {
         "title": "Mẹo ghi nhớ",
-        "desc": "Tạo câu chuyện ghi nhớ hoặc câu viết tắt từ văn bản."
+        "desc": "Tạo truyện ghi nhớ hoặc câu chữ cái đầu."
       }
     },
     "manageTitle": "Quản lý việc học",
-    "manage1": "Tạo, chỉnh sửa và tổ chức bài học theo thư mục.",
-    "manage2": "Đồng bộ đám mây với tài khoản của bạn; dùng trên nhiều thiết bị.",
-    "manage3": "Trạng thái trực tuyến/ngoại tuyến rõ ràng để tin cậy.",
-    "footer": "Dữ liệu của bạn được đồng bộ an toàn với tài khoản. Bạn có thể luyện tập trên mọi thiết bị.",
+    "manage1": "Tạo, chỉnh sửa và sắp xếp bài học theo thư mục.",
+    "manage2": "Đồng bộ với tài khoản; dùng trên nhiều thiết bị.",
+    "manage3": "Trạng thái trực tuyến/ngoại tuyến rõ ràng, đáng tin cậy.",
+    "footer": "Dữ liệu của bạn đồng bộ an toàn với tài khoản; bạn có thể luyện tập trên mọi thiết bị.",
     "back": "Quay lại",
-    "readFull": "Xem toàn bộ phần giới thiệu"
+    "readFull": "Xem giới thiệu đầy đủ"
   },
   "auth": {
     "authGateTitle": "Chào mừng đến với Verbatim AI Memorizer",
