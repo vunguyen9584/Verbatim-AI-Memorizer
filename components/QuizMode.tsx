@@ -11,6 +11,11 @@ import { parseSentences } from '../utils/sentenceParser';
 interface QuizModeProps {
   text: string;
   tokens: string[];
+  initialSelectedQuizTypes?: string[];
+  initialNumQuestions?: number;
+  initialClozeDifficulty?: 'Easy' | 'Medium' | 'Hard';
+  autoStart?: boolean;
+  hideSetup?: boolean;
 }
 
 type QuizState = 'setup' | 'loading' | 'active' | 'results';
@@ -21,14 +26,14 @@ const ALL_QUIZ_TYPES = [
     { id: 'ordering', name: 'Word Order' },
 ];
 
-const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
+const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTypes, initialNumQuestions, initialClozeDifficulty, autoStart = false, hideSetup = false }) => {
   const { t } = useTranslation();
   const [quizState, setQuizState] = useState<QuizState>('setup');
 
   // Setup state
-  const [selectedQuizTypes, setSelectedQuizTypes] = useState<string[]>(['cloze_by_token']);
-  const [numQuestions, setNumQuestions] = useState(5);
-  const [clozeDifficulty, setClozeDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Easy');
+  const [selectedQuizTypes, setSelectedQuizTypes] = useState<string[]>(() => initialSelectedQuizTypes || ['cloze_by_token']);
+  const [numQuestions, setNumQuestions] = useState(() => initialNumQuestions ?? 5);
+  const [clozeDifficulty, setClozeDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>(() => initialClozeDifficulty || 'Easy');
   const [error, setError] = useState<string | null>(null); // store i18n key or raw text
 
   // Active quiz state
@@ -81,6 +86,15 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
       }, 0);
     }
   }, [currentQuizIndex, quizState, isAnswered]);
+
+  useEffect(() => {
+    if (autoStart) {
+      // Ensure we have at least one quiz type
+      if (selectedQuizTypes.length === 0) return;
+      handleGenerateQuiz();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   const handleQuizTypeToggle = (typeId: string) => {
     setSelectedQuizTypes(prev =>
@@ -741,7 +755,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
   switch(quizState) {
       case 'setup':
-          return renderSetup();
+          return hideSetup ? <Loader text={t('quiz.generating')} /> : renderSetup();
       case 'loading':
           return <Loader text={t('quiz.generating')} />;
       case 'active':

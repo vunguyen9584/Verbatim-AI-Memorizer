@@ -40,7 +40,8 @@
     "showAnswer": "Hiển thị đáp án",
     "hint": "Gợi ý: ",
     "revealingText": "Đang hiển thị văn bản...",
-    "speedWPM": "Tốc độ (WPM):"
+    "speedWPM": "Tốc độ (WPM):",
+    "backToModes": "Về chọn chế độ"
   },
   "debugPanel": {
     "title": "Bảng gỡ lỗi AI",
@@ -77,7 +78,8 @@
     "pause": "Tạm dừng",
     "play": "Bắt đầu chạy",
     "reset": "Đặt lại",
-    "speedWPM": "Tốc độ (WPM):"
+    "speedWPM": "Tốc độ (WPM):",
+    "backToModes": "Về chọn chế độ"
   },
   "quiz": {
     "fillInTheBlank": "Điền vào chỗ trống",
@@ -140,9 +142,9 @@
     "sentenceParseError": "Không thể phân tích cú pháp bất kỳ câu nào từ văn bản.",
     "sentenceRangeError": "Phạm vi câu được chọn không hợp lệ.",
     "storyAnalysisPrompt": "Bạn là một chuyên gia phân tích văn bản để tạo câu chuyện ghi nhớ. Nhiệm vụ của bạn là đọc văn bản sau và trích xuất các yếu tố cốt lõi, dễ hình dung nhất từ mỗi câu. Các yếu tố này phải là danh từ cụ thể, động từ hành động hoặc hình ảnh sống động.\n\nVăn bản:\n---\n{{text}}\n---\n\nTrả về một JSON có mảng 'yếu tố' chứa các yếu tố hình ảnh theo thứ tự của các câu.",
-    "storySynthesisPrompt": "Bạn là một người kể chuyện sáng tạo chuyên về những câu chuyện ghi nhớ. Dựa trên danh sách các yếu-tố hình ảnh được sắp xếp theo thứ tự sau đây, hãy tạo một câu chuyện ngắn, vô lý, hài hước và sống động để kết nối tất cả chúng lại với nhau. Câu chuyện phải dễ hình dung để giúp người dùng ghi nhớ thứ tự của các yếu tố.\n\nYếu tố hình ảnh:\n{{json_elements}}\n\nCâu chuyện ghi nhớ của bạn:",
+    "storySynthesisPrompt": "Bạn là một người kể chuyện sáng tạo chuyên về câu chuyện ghi nhớ. Dựa trên danh sách các yếu tố hình ảnh theo thứ tự dưới đây, hãy viết một câu chuyện ngắn, hài hước, sống động, dễ hình dung để nối chúng lại với nhau và giúp ghi nhớ thứ tự.\n\nCHỈ TRẢ VỀ NỘI DUNG CÂU CHUYỆN. Không kèm lời mở đầu, giải thích, tiêu đề, nhãn hay bình luận.\n\nYếu tố hình ảnh:\n{{json_elements}}",
     "acrosticAnalysisPrompt": "Bạn là một chuyên gia phân tích văn bản để tạo ra các từ viết tắt ghi nhớ. Nhiệmvụ của bạn là đọc văn bản sau và trích xuất từ khóa quan trọng nhất từ mỗi câu, từ đại diện cho ý chính của câu đó.\n\nVăn bản:\n---\n{{text}}\n---\n\n Trả về một JSON có mảng 'từ khóa' chứa các từ khóa theo thứ tự của các câu.",
-    "acrosticSynthesisPrompt": "Bạn là một chuyên gia trong việc tạo ra các từ viết tắt ghi nhớ. Dựa trên chuỗi ký tự đầu vào, hãy tạo một câu hoàn chỉnh, dễ nhớ và đúng ngữ pháp, trong đó từ đầu tiên bắt đầu bằng ký tự đầu tiên, từ thứ hai bắt đầu bằng ký tự thứ hai, v.v.\n\nChuỗi ký tự: {{initial_letters}}\n\nCâu ghi nhớ của bạn:",
+    "acrosticSynthesisPrompt": "Bạn là chuyên gia tạo câu ghi nhớ dạng chữ cái đầu. Dựa trên chuỗi ký tự đầu vào, hãy tạo một câu hoàn chỉnh, dễ nhớ, đúng ngữ pháp sao cho từ thứ n bắt đầu bằng ký tự thứ n.\n\nCHỈ TRẢ VỀ NỘI DUNG CÂU. Không kèm lời mở đầu, giải thích, tiêu đề, nhãn hay bình luận.\n\nChuỗi ký tự: {{initial_letters}}",
     "memoryTipsGenerationError": "Không thể tạo mẹo ghi nhớ. Mô hình AI có thể tạm thời không khả dụng.",
     "apiKeyMissing": "Thiếu khóa API Gemini. Vào Cài đặt để thêm khóa của bạn để sử dụng tính năng GenAI."
   },
@@ -164,7 +166,7 @@
     "backToLessons": "Quay lại danh sách bài học",
     "backToLessonsShort": "Danh sách",
     "editLesson": "Chỉnh sửa bài học",
-    "backToFolders": "Về danh sách thư mục"
+    "backToFolders": "Danh sách thư mục"
   },
   "settings": {
     "title": "Cài đặt",
@@ -257,12 +259,12 @@
     "who5": "Diễn viên, nghệ sĩ học kịch bản",
     "howTitle": "Cách hoạt động",
     "how1": "Dán văn bản bạn muốn ghi nhớ.",
-    "how2": "Chọn chế độ: Trắc nghiệm, Chạy chữ, Co-Play hoặc Mẹo ghi nhớ.",
+    "how2": "Chọn chế độ: Kiểm tra, Chạy chữ, Co-Play hoặc Mẹo ghi nhớ.",
     "how3": "Luyện tập với bài tập thông minh đúng theo nội dung của bạn.",
     "how4": "Lưu thành Bài học và sắp xếp theo Thư mục.",
     "modes": {
       "quiz": {
-        "title": "Chế độ Trắc nghiệm",
+        "title": "Chế độ Kiểm tra",
         "desc": "AI tạo bài tập trực tiếp từ văn bản của bạn.",
         "b1": "Điền vào chỗ trống",
         "b2": "Trắc nghiệm",

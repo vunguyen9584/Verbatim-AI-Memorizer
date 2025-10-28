@@ -68,7 +68,7 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8">
+    <div className="min-h-dvh bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8">
       <header className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center">
           <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />

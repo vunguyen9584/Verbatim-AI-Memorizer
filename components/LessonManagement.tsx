@@ -7,7 +7,7 @@ import { useToast } from './common/Toast';
 import Card from './common/Card';
 import Button from './common/Button';
 import ConfirmDialog from './common/ConfirmDialog';
-import { EditIcon, TrashIcon, PlayIcon, ArrowLeftIcon } from './common/Icon';
+import { EditIcon, TrashIcon, PlayIcon, ArrowLeftIcon, PlusIcon } from './common/Icon';
 import LessonForm from './LessonForm';
 import FolderManagement from './FolderManagement';
 
@@ -223,24 +223,33 @@ const LessonManagement: React.FC = () => {
       {
         /* Event listeners are attached via effect */
       }
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-        <div className="flex items-center gap-4">
+      <div className="mb-6">
+        <div className="flex items-center justify-between gap-3">
           <Button 
             onClick={handleBackToFolders} 
             variant="secondary"
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 shrink-0"
           >
             <ArrowLeftIcon className="w-4 h-4" />
             {t('lessonManagement.backToFolders')}
           </Button>
-          <h2 className="text-2xl font-bold text-teal-400">
-            {currentFolder ? (currentFolder.name.startsWith('folderManagement.') ? t(currentFolder.name) : currentFolder.name) : ''}
-          </h2>
+          <Button
+            onClick={() => setIsFormOpen(true)}
+            variant="primary"
+            size="icon"
+            aria-label={t('lessonManagement.createLesson')}
+            title={t('lessonManagement.createLesson')}
+          >
+            <PlusIcon className="w-5 h-5" />
+          </Button>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} variant="primary">
-          {t('lessonManagement.createLesson')}
-        </Button>
+        <h2
+          className="mt-3 text-2xl font-bold text-teal-400 whitespace-normal break-words"
+          title={currentFolder ? (currentFolder.name.startsWith('folderManagement.') ? t(currentFolder.name) : currentFolder.name) : ''}
+        >
+          {currentFolder ? (currentFolder.name.startsWith('folderManagement.') ? t(currentFolder.name) : currentFolder.name) : ''}
+        </h2>
       </div>
 
       {lessons.length === 0 ? (
@@ -250,8 +259,14 @@ const LessonManagement: React.FC = () => {
             <p className="text-lg">{t('lessonManagement.noLessons')}</p>
             <p className="text-sm mt-2">{t('lessonManagement.createFirstLesson')}</p>
           </div>
-          <Button onClick={() => setIsFormOpen(true)} variant="primary">
-            {t('lessonManagement.createLesson')}
+          <Button
+            onClick={() => setIsFormOpen(true)}
+            variant="primary"
+            size="icon"
+            aria-label={t('lessonManagement.createLesson')}
+            title={t('lessonManagement.createLesson')}
+          >
+            <PlusIcon className="w-6 h-6" />
           </Button>
         </div>
       ) : (

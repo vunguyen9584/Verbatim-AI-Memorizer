@@ -7,7 +7,7 @@ const IntroductionPage: React.FC = () => {
   const { t, i18n } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 text-gray-100">
+    <div className="min-h-dvh bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 text-gray-100">
       <header className="p-4 md:p-6 flex items-center justify-between max-w-6xl mx-auto">
         <div className="flex items-center">
           <BrainCircuitIcon className="w-7 h-7 text-teal-400 mr-3" />

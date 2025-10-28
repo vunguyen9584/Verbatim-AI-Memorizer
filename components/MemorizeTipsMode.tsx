@@ -5,6 +5,7 @@ import { generateMemoryTips } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
 import { SparklesIcon } from './common/Icon';
+import { asDangerousHtml } from '../utils/markdown';
 
 interface MemorizeTipsModeProps {
   text: string;
@@ -106,13 +107,15 @@ const MemorizeTipsMode: React.FC<MemorizeTipsModeProps> = ({ text }) => {
         <div className="flex-grow mb-4">
           <div className="bg-gray-700/50 p-6 rounded-lg">
             {selectedMethod === MemoryMethod.STORY ? (
-              <p className="text-lg text-gray-200 whitespace-pre-wrap leading-relaxed">
-                {(result as MemoryStoryResult).story}
-              </p>
+              <div
+                className="text-lg text-gray-200 leading-relaxed"
+                dangerouslySetInnerHTML={asDangerousHtml((result as MemoryStoryResult).story)}
+              />
             ) : (
-              <p className="text-lg text-gray-200 whitespace-pre-wrap leading-relaxed">
-                {(result as MemoryAcrosticResult).sentence}
-              </p>
+              <div
+                className="text-lg text-gray-200 leading-relaxed"
+                dangerouslySetInnerHTML={asDangerousHtml((result as MemoryAcrosticResult).sentence)}
+              />
             )}
           </div>
         </div>

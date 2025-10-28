@@ -21,6 +21,11 @@ import Loader from './components/common/Loader';
 import { env } from './utils/env';
 import IntroductionPage from './components/IntroductionPage';
 import SettingsPage from './components/SettingsPage';
+import PlayPage from './components/PlayPage';
+import CoPlaySetupPage from './components/CoPlaySetupPage';
+import CoPlayRunPage from './components/CoPlayRunPage';
+import QuizSetupPage from './components/QuizSetupPage';
+import QuizRunPage from './components/QuizRunPage';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -48,10 +53,20 @@ const AppContent: React.FC = () => {
   // Simple hash-based routes for special pages
   const [showIntro, setShowIntro] = useState<boolean>(window.location.hash === '#/introduction');
   const [showSettings, setShowSettings] = useState<boolean>(window.location.hash === '#/settings');
+  const [showPlay, setShowPlay] = useState<boolean>(window.location.hash === '#/play');
+  const [showQuizSetup, setShowQuizSetup] = useState<boolean>(window.location.hash === '#/quiz-setup');
+  const [showQuizRun, setShowQuizRun] = useState<boolean>(window.location.hash.startsWith('#/quiz'));
+  const [showCoPlaySetup, setShowCoPlaySetup] = useState<boolean>(window.location.hash === '#/co-play-setup');
+  const [showCoPlayRun, setShowCoPlayRun] = useState<boolean>(window.location.hash.startsWith('#/co-play'));
   useEffect(() => {
     const onHash = () => {
       setShowIntro(window.location.hash === '#/introduction');
       setShowSettings(window.location.hash === '#/settings');
+      setShowPlay(window.location.hash === '#/play');
+      setShowQuizSetup(window.location.hash === '#/quiz-setup');
+      setShowQuizRun(window.location.hash.startsWith('#/quiz'));
+      setShowCoPlaySetup(window.location.hash === '#/co-play-setup');
+      setShowCoPlayRun(window.location.hash.startsWith('#/co-play'));
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -62,7 +77,7 @@ const AppContent: React.FC = () => {
       const lesson = event.detail as Lesson;
       setCurrentLesson(lesson);
       setText(lesson.content);
-      setMode(LearningMode.QUIZ);
+      setMode(null);
       setCurrentView('learning');
     };
 
@@ -75,9 +90,7 @@ const AppContent: React.FC = () => {
   const handleTextSubmit = useCallback((submittedText: string) => {
     setText(submittedText);
     setCurrentLesson(null);
-    if (!mode) {
-      setMode(LearningMode.QUIZ);
-    }
+    // Do not auto-select a mode; user will choose explicitly
   }, [mode]);
 
   const handleBackToLessons = useCallback(() => {
@@ -168,7 +181,7 @@ const AppContent: React.FC = () => {
   // Show loading state while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-dvh bg-gray-900 flex items-center justify-center">
         <Loader />
       </div>
     );
@@ -179,8 +192,48 @@ const AppContent: React.FC = () => {
     return <AuthGate />;
   }
 
+  if (showPlay) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <PlayPage tokens={tokens} />
+      </div>
+    );
+  }
+
+  if (showQuizSetup) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <QuizSetupPage />
+      </div>
+    );
+  }
+
+  if (showQuizRun) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <QuizRunPage text={text} tokens={tokens} />
+      </div>
+    );
+  }
+
+  if (showCoPlaySetup) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <CoPlaySetupPage text={text} tokens={tokens} />
+      </div>
+    );
+  }
+
+  if (showCoPlayRun) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <CoPlayRunPage text={text} tokens={tokens} />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
+    <div className="min-h-dvh bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
         <header className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div className="flex items-center">
             <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />
@@ -252,7 +305,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ToastProvider>
-      <AppContent />
+      <div className="safe-area min-h-dvh">
+        <AppContent />
+      </div>
     </ToastProvider>
   );
 };

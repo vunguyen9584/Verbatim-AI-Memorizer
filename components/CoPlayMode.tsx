@@ -10,12 +10,15 @@ import { parseSentences } from '../utils/sentenceParser';
 interface CoPlayModeProps {
   text: string;
   tokens: string[];
+  initialModeOption?: CoPlayModeOption;
+  autoStart?: boolean;
+  hideSetup?: boolean;
 }
 
-const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
+const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption, autoStart = false, hideSetup = false }) => {
   const { t } = useTranslation();
   const totalSentences = useMemo(() => parseSentences(tokens).length, [tokens]);
-  const [modeOption, setModeOption] = useState<CoPlayModeOption>({
+  const [modeOption, setModeOption] = useState<CoPlayModeOption>(() => initialModeOption || {
     type: CoPlayModeType.AppFirstN,
     appSentences: 1,
     userSentences: 1,
@@ -93,6 +96,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
       setLoading(false);
     }
   }, [text, tokens, modeOption, t]);
+
+  useEffect(() => {
+    if (autoStart) {
+      fetchPlan();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   useEffect(() => {
     if (isPaused && currentTimelineItem?.pause_require.length > 0) {
@@ -368,6 +378,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   };
 
   if (!plan) {
+    if (hideSetup) {
+      return (
+        <div className="p-6">
+          <Loader text={t('coPlay.planningSession')} />
+        </div>
+      );
+    }
     return (
       <div className="p-4 md:p-8 flex flex-col h-full">
         <h2 className="text-2xl font-bold text-teal-400 mb-6">{t('coPlay.setupTitle')}</h2>
@@ -398,7 +415,6 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                       className="w-20 bg-gray-800 border border-gray-600 rounded p-2"
                     />
                   </div>
-                  <div className="text-gray-400 pb-1">{t('coPlay.to')}</div>
                   <div>
                     <label htmlFor="end-sentence" className="block text-gray-300 mb-1 text-sm">{t('coPlay.toSentence')}</label>
                     <input
@@ -524,7 +540,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
         <>
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex justify-center items-center mb-4">
             {sentencesToType && (
               <div class="text-center p-2 bg-blue-900/30 rounded-lg">
                 {isMultiSentenceTurn ? (
@@ -536,10 +552,6 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
                 )}
               </div>
             )}
-            <div class="flex gap-2">
-              <Button onClick={handleReset} variant="secondary" size="sm">{t('coPlay.reset')}</Button>
-              <Button onClick={handleEndSession} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
-            </div>
           </div>
           <form onSubmit={handleSubmit} class="flex flex-col sm:flex-row items-center gap-3">
             <div class="relative flex-grow w-full sm:w-auto">
@@ -604,7 +616,17 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
               />
               <span class="font-mono text-teal-300 w-10 text-center">{wpm}</span>
             </div>
-            <Button onClick={handleEndSession} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
+        </div>
+      )}
+
+      {!isFinished && (
+        <div className="mt-auto">
+          <div className="sticky bottom-0 bg-gray-900/80 backdrop-blur border-t border-gray-800 p-3">
+            <div className="flex items-center justify-center gap-3">
+              <Button onClick={handleReset} variant="secondary">{t('coPlay.reset')}</Button>
+              <Button onClick={handleEndSession} variant="secondary">{t('coPlay.endSession')}</Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

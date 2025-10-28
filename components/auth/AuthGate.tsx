@@ -127,7 +127,7 @@ const AuthGate: React.FC = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex flex-col items-center p-4 gap-6">
+      <div className="min-h-dvh bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex flex-col items-center p-4 gap-6">
         <Card className="max-w-md w-full bg-gray-800 shadow-2xl">
           <div className="p-8">
             <div className="flex justify-end mb-4">
@@ -180,7 +180,7 @@ const AuthGate: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex flex-col items-center p-4 gap-6">
+    <div className="min-h-dvh bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 flex flex-col items-center p-4 gap-6">
       <Card className="max-w-md w-full bg-gray-800 shadow-2xl">
         <div className="p-8">
           <div className="flex justify-end mb-4">
