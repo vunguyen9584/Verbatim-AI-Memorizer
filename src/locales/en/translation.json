@@ -77,7 +77,8 @@
     "pause": "Pause",
     "play": "Play",
     "reset": "Reset",
-    "speedWPM": "Speed (WPM):"
+    "speedWPM": "Speed (WPM):",
+    "backToModes": "Back to mode selection"
   },
   "quiz": {
     "fillInTheBlank": "Fill-in-the-Blank",

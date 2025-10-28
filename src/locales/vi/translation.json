@@ -77,7 +77,8 @@
     "pause": "Tạm dừng",
     "play": "Bắt đầu chạy",
     "reset": "Đặt lại",
-    "speedWPM": "Tốc độ (WPM):"
+    "speedWPM": "Tốc độ (WPM):",
+    "backToModes": "Về chọn chế độ"
   },
   "quiz": {
     "fillInTheBlank": "Điền vào chỗ trống",
