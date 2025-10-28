@@ -5,7 +5,8 @@ import { QuizData, ClozeQuizItem, MCQQuizItem, OrderingQuizItem } from '../types
 import { generateQuizzes } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
-import { CheckCircleIcon, XCircleIcon, SparklesIcon } from './common/Icon';
+import { CheckCircleIcon, XCircleIcon, SparklesIcon, BookOpenIcon } from './common/Icon';
+import { parseSentences } from '../utils/sentenceParser';
 
 interface QuizModeProps {
   text: string;
@@ -107,42 +108,98 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     }
     setError(null);
     resetQuizState();
-    setQuizState('loading');
     
-    try {
-      const options = { quizTypes: selectedQuizTypes, numQuestions };
-      const data = await generateQuizzes(text, tokens, options);
+    // Local generator for ordering quizzes (no AI)
+    const makeLocalOrderingQuizzes = (count: number): OrderingQuizItem[] => {
+      const sentences = parseSentences(tokens);
+      const candidates = sentences.filter(s => s.text.trim().split(/\s+/).filter(Boolean).length >= 3);
+      const pool = candidates.length > 0 ? candidates : sentences;
+      const indices = [...pool.keys()];
+      // shuffle indices
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
 
-      // Basic validation for AI response
-      if (!data || !Array.isArray(data.quizzes) || data.quizzes.length === 0) {
+      const items: OrderingQuizItem[] = [];
+      for (let k = 0; k < Math.min(count, indices.length); k++) {
+        const s = pool[indices[k]];
+        const words = s.text.trim().split(/\s+/).filter(Boolean);
+        // scramble words ensuring different order when possible
+        const scrambled = [...words];
+        for (let i = scrambled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [scrambled[i], scrambled[j]] = [scrambled[j], scrambled[i]];
+        }
+        if (scrambled.join(' ') === words.join(' ') && scrambled.length > 1) {
+          [scrambled[0], scrambled[1]] = [scrambled[1], scrambled[0]];
+        }
+
+        items.push({
+          type: 'ordering',
+          stem: t('quiz.orderingStem'),
+          scrambled_words: scrambled,
+          answer_span: [s.tokenStart, s.tokenEnd],
+        });
+      }
+      return items;
+    };
+
+    const includesOrdering = selectedQuizTypes.includes('ordering');
+    const remoteTypes = selectedQuizTypes.filter(tid => tid !== 'ordering');
+
+    // Only ordering selected -> fully local, no loading state
+    if (includesOrdering && remoteTypes.length === 0) {
+      const localItems = makeLocalOrderingQuizzes(numQuestions);
+      setQuizData({ quizzes: localItems });
+      setQuizState('active');
+      return;
+    }
+
+    // Mix local ordering with remote AI quizzes
+    setQuizState('loading');
+    const localCount = includesOrdering ? Math.ceil(numQuestions / 2) : 0;
+    const remoteCount = Math.max(0, numQuestions - localCount);
+    const localItems = includesOrdering ? makeLocalOrderingQuizzes(localCount) : [];
+
+    try {
+      const options = { quizTypes: remoteTypes, numQuestions: remoteCount } as const;
+      const data = remoteCount > 0 ? await generateQuizzes(text, tokens, options) : { quizzes: [] } as QuizData;
+
+      if (!data || !Array.isArray(data.quizzes)) {
         setError('quiz.emptyResponseError');
         setQuizState('setup');
         return;
       }
 
-      // More specific validation for quiz item integrity.
+      // Validate remote MCQs only
       for (const quiz of data.quizzes) {
         if (!quiz || !quiz.type || !quiz.stem) {
-             setError('quiz.invalidDataError');
-             setQuizState('setup');
-             return;
+          setError('quiz.invalidDataError');
+          setQuizState('setup');
+          return;
         }
-        // This check specifically prevents the "Answer not available" issue for MCQs.
         if (quiz.type === 'mcq_cloze') {
           const mcq = quiz as MCQQuizItem;
           const hasIndex = typeof mcq.answer_index === 'number';
           const canDerive = (mcq as any).blanks?.[0]?.answer_text && Array.isArray(mcq.options);
-          
           if (!hasIndex && !canDerive) {
             setError('quiz.noAnswerError');
             setQuizState('setup');
-            console.warn("Invalid MCQ item from AI:", mcq);
+            console.warn('Invalid MCQ item from AI:', mcq);
             return;
           }
         }
       }
 
-      setQuizData(data);
+      // Combine and shuffle
+      const combined = [...data.quizzes, ...localItems];
+      for (let i = combined.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [combined[i], combined[j]] = [combined[j], combined[i]];
+      }
+
+      setQuizData({ quizzes: combined });
       setQuizState('active');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'quiz.generationError');
@@ -220,7 +277,10 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
 
     console.log(JSON.stringify(currentQuiz));
 
-    inputRefs.current = []; // Clear refs before re-populating
+    // Clear refs before re-populating
+    if (Array.isArray(inputRefs.current)) {
+      inputRefs.current.splice(0, inputRefs.current.length);
+    }
 
     switch (currentQuiz.type) {
       case 'cloze_by_token':
@@ -444,7 +504,10 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                                 : 'bg-gray-700/50 border-gray-600 hover:bg-gray-700'
                             }`}
                         >
-                            {t(`quiz.${type.id}`)}
+                            <span>{t(`quiz.${type.id}`)}</span>
+                            {type.id === 'ordering' && (
+                              <span className="ml-2 text-xs text-gray-400 align-middle">• {t('quiz.local')}</span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -491,9 +554,13 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         </div>
 
         <div className="mt-8">
-            <Button onClick={handleGenerateQuiz} variant="primary" className="w-full" disabled={selectedQuizTypes.length === 0} aria-label={t('quiz.generate')}>
-                <SparklesIcon className="w-5 h-5" aria-hidden="true" />
-                {t('quiz.generate')}
+            <Button onClick={handleGenerateQuiz} variant="primary" className="w-full" disabled={selectedQuizTypes.length === 0} aria-label={t(selectedQuizTypes.length === 1 && selectedQuizTypes[0] === 'ordering' ? 'quiz.start' : 'quiz.generate')}>
+                {selectedQuizTypes.length === 1 && selectedQuizTypes[0] === 'ordering' ? (
+                  <BookOpenIcon className="w-5 h-5" aria-hidden="true" />
+                ) : (
+                  <SparklesIcon className="w-5 h-5" aria-hidden="true" />
+                )}
+                {t(selectedQuizTypes.length === 1 && selectedQuizTypes[0] === 'ordering' ? 'quiz.start' : 'quiz.generate')}
             </Button>
         </div>
     </div>
