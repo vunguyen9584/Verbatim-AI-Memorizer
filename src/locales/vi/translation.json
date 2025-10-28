@@ -40,7 +40,8 @@
     "showAnswer": "Hiển thị đáp án",
     "hint": "Gợi ý: ",
     "revealingText": "Đang hiển thị văn bản...",
-    "speedWPM": "Tốc độ (WPM):"
+    "speedWPM": "Tốc độ (WPM):",
+    "backToModes": "Về chọn chế độ"
   },
   "debugPanel": {
     "title": "Bảng gỡ lỗi AI",

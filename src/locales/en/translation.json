@@ -40,7 +40,8 @@
     "showAnswer": "Show Answer",
     "hint": "Hint: ",
     "revealingText": "Revealing text...",
-    "speedWPM": "Speed (WPM):"
+    "speedWPM": "Speed (WPM):",
+    "backToModes": "Back to mode selection"
   },
   "debugPanel": {
     "title": "AI Debug Panel",

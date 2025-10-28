@@ -25,6 +25,8 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ currentMode, onSelectMode }
             onClick={() => {
               if (mode === LearningMode.PLAY) {
                 window.location.hash = '#/play';
+              } else if (mode === LearningMode.CO_PLAY) {
+                window.location.hash = '#/co-play-setup';
               } else {
                 onSelectMode(mode);
               }

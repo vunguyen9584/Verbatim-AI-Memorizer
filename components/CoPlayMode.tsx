@@ -10,12 +10,15 @@ import { parseSentences } from '../utils/sentenceParser';
 interface CoPlayModeProps {
   text: string;
   tokens: string[];
+  initialModeOption?: CoPlayModeOption;
+  autoStart?: boolean;
+  hideSetup?: boolean;
 }
 
-const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
+const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption, autoStart = false, hideSetup = false }) => {
   const { t } = useTranslation();
   const totalSentences = useMemo(() => parseSentences(tokens).length, [tokens]);
-  const [modeOption, setModeOption] = useState<CoPlayModeOption>({
+  const [modeOption, setModeOption] = useState<CoPlayModeOption>(() => initialModeOption || {
     type: CoPlayModeType.AppFirstN,
     appSentences: 1,
     userSentences: 1,
@@ -93,6 +96,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
       setLoading(false);
     }
   }, [text, tokens, modeOption, t]);
+
+  useEffect(() => {
+    if (autoStart) {
+      fetchPlan();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   useEffect(() => {
     if (isPaused && currentTimelineItem?.pause_require.length > 0) {
@@ -368,6 +378,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens }) => {
   };
 
   if (!plan) {
+    if (hideSetup) {
+      return (
+        <div className="p-6">
+          <Loader text={t('coPlay.planningSession')} />
+        </div>
+      );
+    }
     return (
       <div className="p-4 md:p-8 flex flex-col h-full">
         <h2 className="text-2xl font-bold text-teal-400 mb-6">{t('coPlay.setupTitle')}</h2>

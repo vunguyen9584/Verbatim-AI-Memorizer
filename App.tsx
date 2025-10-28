@@ -22,6 +22,8 @@ import { env } from './utils/env';
 import IntroductionPage from './components/IntroductionPage';
 import SettingsPage from './components/SettingsPage';
 import PlayPage from './components/PlayPage';
+import CoPlaySetupPage from './components/CoPlaySetupPage';
+import CoPlayRunPage from './components/CoPlayRunPage';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -50,11 +52,15 @@ const AppContent: React.FC = () => {
   const [showIntro, setShowIntro] = useState<boolean>(window.location.hash === '#/introduction');
   const [showSettings, setShowSettings] = useState<boolean>(window.location.hash === '#/settings');
   const [showPlay, setShowPlay] = useState<boolean>(window.location.hash === '#/play');
+  const [showCoPlaySetup, setShowCoPlaySetup] = useState<boolean>(window.location.hash === '#/co-play-setup');
+  const [showCoPlayRun, setShowCoPlayRun] = useState<boolean>(window.location.hash.startsWith('#/co-play'));
   useEffect(() => {
     const onHash = () => {
       setShowIntro(window.location.hash === '#/introduction');
       setShowSettings(window.location.hash === '#/settings');
       setShowPlay(window.location.hash === '#/play');
+      setShowCoPlaySetup(window.location.hash === '#/co-play-setup');
+      setShowCoPlayRun(window.location.hash.startsWith('#/co-play'));
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -186,6 +192,22 @@ const AppContent: React.FC = () => {
     return (
       <div className="min-h-dvh bg-gray-900">
         <PlayPage tokens={tokens} />
+      </div>
+    );
+  }
+
+  if (showCoPlaySetup) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <CoPlaySetupPage text={text} tokens={tokens} />
+      </div>
+    );
+  }
+
+  if (showCoPlayRun) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <CoPlayRunPage text={text} tokens={tokens} />
       </div>
     );
   }
