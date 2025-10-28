@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CoPlayPlan, CoPlayModeType, CoPlayModeOption } from '../types';
-import { planCoPlay } from '../services/geminiService';
+import { planCoPlay } from '../services/coPlayPlannerService';
 import Loader from './common/Loader';
 import Button from './common/Button';
 import { LightbulbIcon } from './common/Icon';
