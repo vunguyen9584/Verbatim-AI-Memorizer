@@ -168,7 +168,7 @@ const AppContent: React.FC = () => {
   // Show loading state while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-dvh bg-gray-900 flex items-center justify-center">
         <Loader />
       </div>
     );
@@ -180,7 +180,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
+    <div className="min-h-dvh bg-gray-900 text-gray-100 flex flex-col p-4 md:p-8 font-sans">
         <header className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div className="flex items-center">
             <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />
@@ -252,7 +252,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ToastProvider>
-      <AppContent />
+      <div className="safe-area min-h-dvh">
+        <AppContent />
+      </div>
     </ToastProvider>
   );
 };
