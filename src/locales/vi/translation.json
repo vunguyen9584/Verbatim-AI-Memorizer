@@ -259,12 +259,12 @@
     "who5": "Diễn viên, nghệ sĩ học kịch bản",
     "howTitle": "Cách hoạt động",
     "how1": "Dán văn bản bạn muốn ghi nhớ.",
-    "how2": "Chọn chế độ: Trắc nghiệm, Chạy chữ, Co-Play hoặc Mẹo ghi nhớ.",
+    "how2": "Chọn chế độ: Kiểm tra, Chạy chữ, Co-Play hoặc Mẹo ghi nhớ.",
     "how3": "Luyện tập với bài tập thông minh đúng theo nội dung của bạn.",
     "how4": "Lưu thành Bài học và sắp xếp theo Thư mục.",
     "modes": {
       "quiz": {
-        "title": "Chế độ Trắc nghiệm",
+        "title": "Chế độ Kiểm tra",
         "desc": "AI tạo bài tập trực tiếp từ văn bản của bạn.",
         "b1": "Điền vào chỗ trống",
         "b2": "Trắc nghiệm",
