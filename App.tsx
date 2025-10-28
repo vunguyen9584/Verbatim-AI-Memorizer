@@ -24,6 +24,8 @@ import SettingsPage from './components/SettingsPage';
 import PlayPage from './components/PlayPage';
 import CoPlaySetupPage from './components/CoPlaySetupPage';
 import CoPlayRunPage from './components/CoPlayRunPage';
+import QuizSetupPage from './components/QuizSetupPage';
+import QuizRunPage from './components/QuizRunPage';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -52,6 +54,8 @@ const AppContent: React.FC = () => {
   const [showIntro, setShowIntro] = useState<boolean>(window.location.hash === '#/introduction');
   const [showSettings, setShowSettings] = useState<boolean>(window.location.hash === '#/settings');
   const [showPlay, setShowPlay] = useState<boolean>(window.location.hash === '#/play');
+  const [showQuizSetup, setShowQuizSetup] = useState<boolean>(window.location.hash === '#/quiz-setup');
+  const [showQuizRun, setShowQuizRun] = useState<boolean>(window.location.hash.startsWith('#/quiz'));
   const [showCoPlaySetup, setShowCoPlaySetup] = useState<boolean>(window.location.hash === '#/co-play-setup');
   const [showCoPlayRun, setShowCoPlayRun] = useState<boolean>(window.location.hash.startsWith('#/co-play'));
   useEffect(() => {
@@ -59,6 +63,8 @@ const AppContent: React.FC = () => {
       setShowIntro(window.location.hash === '#/introduction');
       setShowSettings(window.location.hash === '#/settings');
       setShowPlay(window.location.hash === '#/play');
+      setShowQuizSetup(window.location.hash === '#/quiz-setup');
+      setShowQuizRun(window.location.hash.startsWith('#/quiz'));
       setShowCoPlaySetup(window.location.hash === '#/co-play-setup');
       setShowCoPlayRun(window.location.hash.startsWith('#/co-play'));
     };
@@ -71,7 +77,7 @@ const AppContent: React.FC = () => {
       const lesson = event.detail as Lesson;
       setCurrentLesson(lesson);
       setText(lesson.content);
-      setMode(LearningMode.QUIZ);
+      setMode(null);
       setCurrentView('learning');
     };
 
@@ -84,9 +90,7 @@ const AppContent: React.FC = () => {
   const handleTextSubmit = useCallback((submittedText: string) => {
     setText(submittedText);
     setCurrentLesson(null);
-    if (!mode) {
-      setMode(LearningMode.QUIZ);
-    }
+    // Do not auto-select a mode; user will choose explicitly
   }, [mode]);
 
   const handleBackToLessons = useCallback(() => {
@@ -192,6 +196,22 @@ const AppContent: React.FC = () => {
     return (
       <div className="min-h-dvh bg-gray-900">
         <PlayPage tokens={tokens} />
+      </div>
+    );
+  }
+
+  if (showQuizSetup) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <QuizSetupPage />
+      </div>
+    );
+  }
+
+  if (showQuizRun) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <QuizRunPage text={text} tokens={tokens} />
       </div>
     );
   }
