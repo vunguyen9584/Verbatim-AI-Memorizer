@@ -145,22 +145,112 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
       return items;
     };
 
-    const includesOrdering = selectedQuizTypes.includes('ordering');
-    const remoteTypes = selectedQuizTypes.filter(tid => tid !== 'ordering');
+    // Local generator for fill-in-the-blank (no AI)
+    const makeLocalClozeQuizzes = (count: number): ClozeQuizItem[] => {
+      const sentences = parseSentences(tokens);
+      const pool = sentences.filter(s => s.text.split(/\s+/).filter(Boolean).length >= 4);
+      const base = pool.length > 0 ? pool : sentences;
+      const idxs = [...base.keys()];
+      for (let i = idxs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [idxs[i], idxs[j]] = [idxs[j], idxs[i]];
+      }
 
-    // Only ordering selected -> fully local, no loading state
-    if (includesOrdering && remoteTypes.length === 0) {
-      const localItems = makeLocalOrderingQuizzes(numQuestions);
-      setQuizData({ quizzes: localItems });
+      const items: ClozeQuizItem[] = [];
+      for (let k = 0; k < Math.min(count, idxs.length); k++) {
+        const s = base[idxs[k]];
+
+        // Trim leading/trailing whitespace tokens to align with s.text
+        let start = s.tokenStart;
+        let end = s.tokenEnd;
+        while (start <= end && /^\s+$/.test(tokens[start] || '')) start++;
+        while (end >= start && /^\s+$/.test(tokens[end] || '')) end--;
+
+        const sentTokens = tokens.slice(start, end + 1);
+        const sentText = sentTokens.join(''); // should match s.text
+
+        // Find candidate words in sentence text
+        const wordRegex = /[\p{L}\p{N}][\p{L}\p{N}'-]*/gu;
+        const candidates: { start: number; end: number }[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = wordRegex.exec(sentText)) !== null) {
+          const w = m[0];
+          if (w.length >= 3) {
+            candidates.push({ start: m.index, end: m.index + w.length });
+          }
+        }
+        if (candidates.length === 0) continue;
+
+        // Pick one word/phrase to blank
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+
+        // Map char range -> token indices
+        const tokenCharStarts: number[] = [];
+        let acc = 0;
+        for (const tk of sentTokens) {
+          tokenCharStarts.push(acc);
+          acc += tk.length;
+        }
+        const answerTokenIdxs: number[] = [];
+        for (let ti = 0; ti < sentTokens.length; ti++) {
+          const charStart = tokenCharStarts[ti];
+          const charEnd = charStart + sentTokens[ti].length;
+          const overlaps = Math.max(charStart, pick.start) < Math.min(charEnd, pick.end);
+          if (overlaps) {
+            answerTokenIdxs.push(start + ti);
+          }
+        }
+        const answerText = sentText.slice(pick.start, pick.end);
+
+        const baseWithMask = sentText.slice(0, pick.start) + '...' + sentText.slice(pick.end);
+
+        // Context sentences
+        const all = sentences;
+        const iInAll = all.findIndex(ss => ss.tokenStart === s.tokenStart && ss.tokenEnd === s.tokenEnd);
+        const before = iInAll > 0 ? all[iInAll - 1].text : undefined;
+        const after = iInAll < all.length - 1 ? all[iInAll + 1].text : undefined;
+
+        items.push({
+          type: 'cloze_by_token',
+          stem: t('quiz.fillInTheBlank'),
+          base_text_with_masks: baseWithMask,
+          blanks: [{ answer_tokens: answerTokenIdxs, answer_text: answerText }],
+          context_before: before,
+          context_after: after,
+        });
+      }
+      return items;
+    };
+
+    const includesOrdering = selectedQuizTypes.includes('ordering');
+    const includesCloze = selectedQuizTypes.includes('cloze_by_token');
+    const localTypesSelected = includesOrdering || includesCloze;
+    const remoteTypes = selectedQuizTypes.filter(tid => tid === 'mcq_cloze');
+
+    // Only local types selected -> fully local, no loading state
+    if (localTypesSelected && remoteTypes.length === 0) {
+      const localCloze = includesCloze ? makeLocalClozeQuizzes(numQuestions) : [];
+      const localOrdering = includesOrdering ? makeLocalOrderingQuizzes(numQuestions) : [];
+      const combinedLocal = [...localCloze, ...localOrdering];
+      // shuffle
+      for (let i = combinedLocal.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [combinedLocal[i], combinedLocal[j]] = [combinedLocal[j], combinedLocal[i]];
+      }
+      setQuizData({ quizzes: combinedLocal.slice(0, numQuestions) });
       setQuizState('active');
       return;
     }
 
-    // Mix local ordering with remote AI quizzes
+    // Mix local (cloze/order) with remote AI quizzes (MCQ)
     setQuizState('loading');
-    const localCount = includesOrdering ? Math.ceil(numQuestions / 2) : 0;
+    const hasLocal = localTypesSelected;
+    const localCount = hasLocal ? Math.ceil(numQuestions / 2) : 0;
     const remoteCount = Math.max(0, numQuestions - localCount);
-    const localItems = includesOrdering ? makeLocalOrderingQuizzes(localCount) : [];
+    const localItems: QuizData['quizzes'] = [
+      ...(includesCloze ? makeLocalClozeQuizzes(Math.ceil(localCount / (includesOrdering && includesCloze ? 2 : 1))) : []),
+      ...(includesOrdering ? makeLocalOrderingQuizzes(Math.floor(localCount / (includesOrdering && includesCloze ? 2 : 1))) : []),
+    ];
 
     try {
       const options = { quizTypes: remoteTypes, numQuestions: remoteCount } as const;
@@ -505,7 +595,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
                             }`}
                         >
                             <span>{t(`quiz.${type.id}`)}</span>
-                            {type.id === 'ordering' && (
+                            {(type.id === 'ordering' || type.id === 'cloze_by_token') && (
                               <span className="ml-2 text-xs text-gray-400 align-middle">• {t('quiz.local')}</span>
                             )}
                         </button>
@@ -554,14 +644,25 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         </div>
 
         <div className="mt-8">
-            <Button onClick={handleGenerateQuiz} variant="primary" className="w-full" disabled={selectedQuizTypes.length === 0} aria-label={t(selectedQuizTypes.length === 1 && selectedQuizTypes[0] === 'ordering' ? 'quiz.start' : 'quiz.generate')}>
-                {selectedQuizTypes.length === 1 && selectedQuizTypes[0] === 'ordering' ? (
-                  <BookOpenIcon className="w-5 h-5" aria-hidden="true" />
-                ) : (
-                  <SparklesIcon className="w-5 h-5" aria-hidden="true" />
-                )}
-                {t(selectedQuizTypes.length === 1 && selectedQuizTypes[0] === 'ordering' ? 'quiz.start' : 'quiz.generate')}
-            </Button>
+            {(() => {
+              const localOnly = selectedQuizTypes.length > 0 && selectedQuizTypes.every(id => id === 'ordering' || id === 'cloze_by_token');
+              return (
+                <Button
+                  onClick={handleGenerateQuiz}
+                  variant="primary"
+                  className="w-full"
+                  disabled={selectedQuizTypes.length === 0}
+                  aria-label={t(localOnly ? 'quiz.start' : 'quiz.generate')}
+                >
+                  {localOnly ? (
+                    <BookOpenIcon className="w-5 h-5" aria-hidden="true" />
+                  ) : (
+                    <SparklesIcon className="w-5 h-5" aria-hidden="true" />
+                  )}
+                  {t(localOnly ? 'quiz.start' : 'quiz.generate')}
+                </Button>
+              );
+            })()}
         </div>
     </div>
   );
