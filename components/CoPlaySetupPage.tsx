@@ -89,7 +89,6 @@ const CoPlaySetupPage: React.FC<CoPlaySetupPageProps> = ({ tokens }) => {
                     <label htmlFor="start-sentence" className="block text-gray-300 mb-1 text-sm">{t('coPlay.fromSentence')}</label>
                     <input id="start-sentence" type="number" min="1" max={totalSentences} value={modeOption.startSentence} onChange={e => setStart(e.target.value)} className="w-24 bg-gray-800 border border-gray-600 rounded p-2" />
                   </div>
-                  <div className="text-gray-400 pb-1">{t('coPlay.to')}</div>
                   <div>
                     <label htmlFor="end-sentence" className="block text-gray-300 mb-1 text-sm">{t('coPlay.toSentence')}</label>
                     <input id="end-sentence" type="number" min="1" max={totalSentences} value={modeOption.endSentence} onChange={e => setEnd(e.target.value)} className="w-24 bg-gray-800 border border-gray-600 rounded p-2" />

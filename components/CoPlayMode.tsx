@@ -415,7 +415,6 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
                       className="w-20 bg-gray-800 border border-gray-600 rounded p-2"
                     />
                   </div>
-                  <div className="text-gray-400 pb-1">{t('coPlay.to')}</div>
                   <div>
                     <label htmlFor="end-sentence" className="block text-gray-300 mb-1 text-sm">{t('coPlay.toSentence')}</label>
                     <input
