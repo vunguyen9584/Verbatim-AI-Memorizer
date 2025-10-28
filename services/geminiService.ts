@@ -1,8 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import i18n from 'i18next';
-import { QuizData, CoPlayPlan, CoPlayModeOption, CoPlayModeType, StoryElements, AcrosticKeywords, MemoryStoryResult, MemoryAcrosticResult, MemoryMethod } from '../types';
+import { QuizData, StoryElements, AcrosticKeywords, MemoryStoryResult, MemoryAcrosticResult, MemoryMethod } from '../types';
 import { logger } from '../utils/debugLogger';
-import { parseSentences } from '../utils/sentenceParser';
 import { settings } from '../utils/settings';
 
 // Initialize the GoogleGenAI client with the user-provided API key from settings
@@ -90,45 +89,6 @@ const quizDataSchema = {
     required: ['quizzes']
 };
 
-const coPlayPlanSchema = {
-    type: Type.OBJECT,
-    properties: {
-        timeline: {
-            type: Type.ARRAY,
-            description: "A sequence of steps for the co-play session.",
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    reveal_until_token: {
-                        type: Type.INTEGER,
-                        description: "Reveal the text up to this token index (exclusive). The user sees text from token 0 to this token."
-                    },
-                    pause_require: {
-                        type: Type.ARRAY,
-                        description: "Specifies a pause where the user must provide input. Typically only one pause per timeline item.",
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                span: {
-                                    type: Type.ARRAY,
-                                    description: "The start and end token indices (inclusive) of the text the user needs to type.",
-                                    items: { type: Type.INTEGER }
-                                },
-                                user_sentences_to_type: {
-                                    type: Type.INTEGER,
-                                    description: "The number of sentences the user is expected to type during this pause."
-                                }
-                            },
-                            required: ['span']
-                        }
-                    }
-                },
-                required: ['reveal_until_token', 'pause_require']
-            }
-        }
-    },
-    required: ['timeline']
-};
 
 const storyElementsSchema = {
     type: Type.OBJECT,
@@ -209,108 +169,6 @@ export const generateQuizzes = async (
     }
 };
 
-export const planCoPlay = async (text: string, tokens: string[], options: CoPlayModeOption): Promise<CoPlayPlan> => {
-    // Simple implementation without AI
-    const sentences = parseSentences(tokens);
-
-    if (sentences.length === 0) {
-        throw new Error(i18n.t('gemini.sentenceParseError'));
-    }
-
-    // Apply sentence range: filter sentences based on start and end (1-based indices)
-    const startIdx = Math.max(1, Math.min(options.startSentence, sentences.length)) - 1;
-    const endIdx = Math.max(startIdx, Math.min(options.endSentence, sentences.length)) - 1;
-    const filteredSentences = sentences.slice(startIdx, endIdx + 1);
-
-    if (filteredSentences.length === 0) {
-        throw new Error(i18n.t('gemini.sentenceRangeError'));
-    }
-
-    const timeline = [];
-
-    // Special case for "all" selection or very short texts: reveal all, then pause for user to type all
-    if (options.appSentences === 'all' || options.userSentences === 'all') {
-        const firstTokenIdx = filteredSentences[0].tokenStart;
-        const lastTokenIdx = filteredSentences[filteredSentences.length - 1].tokenEnd;
-        
-        timeline.push({
-            reveal_until_token: (options.appSentences === 'all' ? lastTokenIdx : firstTokenIdx - 1) + 1,
-            pause_require: [{
-                span: options.appSentences === 'all' ? [firstTokenIdx, lastTokenIdx] : [firstTokenIdx, lastTokenIdx],
-                user_sentences_to_type: options.userSentences === 'all' ? filteredSentences.length : (options.appSentences === 'all' ? 0 : options.userSentences),
-            }],
-        });
-    } else {
-        // Normal case: alternate app reveal n, user type n
-        let currentSentenceIndex = startIdx;
-        let isAppTurn = options.type === CoPlayModeType.AppFirstN || options.type === CoPlayModeType.AppFirstRandom;
-
-        while (currentSentenceIndex <= endIdx) {
-            if (isAppTurn) {
-                // App reveals sentences
-                let sentencesToReveal = typeof options.appSentences === 'number' 
-                  ? options.appSentences 
-                  : endIdx - currentSentenceIndex + 1;
-                if (options.type === CoPlayModeType.AppFirstRandom || options.type === CoPlayModeType.UserFirstRandom) {
-                    sentencesToReveal = Math.floor(Math.random() * 3) + 1; // Random 1-3 sentences
-                }
-
-                let revealUntil = currentSentenceIndex > 0 ? sentences[currentSentenceIndex - 1].tokenEnd + 1 : 0;
-                for (let i = 0; i < sentencesToReveal && currentSentenceIndex <= endIdx; i++) {
-                    revealUntil = sentences[currentSentenceIndex].tokenEnd + 1;
-                    currentSentenceIndex++;
-                }
-
-                timeline.push({
-                    reveal_until_token: revealUntil,
-                    pause_require: [],
-                });
-            } else {
-                // User types sentences
-                let sentencesToTypeRaw = typeof options.userSentences === 'number' 
-                  ? options.userSentences 
-                  : endIdx - currentSentenceIndex + 1;
-                if (options.type === CoPlayModeType.AppFirstRandom || options.type === CoPlayModeType.UserFirstRandom) {
-                    sentencesToTypeRaw = Math.floor(Math.random() * 3) + 1; // Random 1-3 sentences
-                }
-
-                let typeUntil = currentSentenceIndex;
-                for (let i = 0; i < sentencesToTypeRaw && typeUntil <= endIdx; i++) {
-                    typeUntil++;
-                }
-
-                const sentencesToType = typeUntil - currentSentenceIndex;
-                if (sentencesToType === 0) {
-                    // This can happen if we are at the end and it's the user's turn with no sentences left.
-                    // Simply skip this turn.
-                    isAppTurn = !isAppTurn;
-                    continue;
-                }
-
-                const spanStart = currentSentenceIndex === startIdx ? sentences[startIdx].tokenStart : sentences[currentSentenceIndex - 1].tokenEnd + 1;
-                const spanEnd = sentences[typeUntil - 1].tokenEnd;
-
-                timeline.push({
-                    reveal_until_token: spanStart,
-                    pause_require: [{
-                        span: [spanStart, spanEnd],
-                        user_sentences_to_type: sentencesToType,
-                    }],
-                });
-
-                currentSentenceIndex = typeUntil;
-            }
-
-            isAppTurn = !isAppTurn;
-        }
-    }
-
-    const plan: CoPlayPlan = { timeline };
-
-    logger.log('SIMPLE_PLAN', { type: 'planCoPlay', options, sentences: sentences.length, timeline: plan.timeline });
-
-    return plan;
-};
 
 export const generateMemoryTips = async (
     text: string,
