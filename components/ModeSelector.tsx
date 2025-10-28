@@ -22,7 +22,13 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ currentMode, onSelectMode }
         {modes.map((mode) => (
           <Button
             key={mode}
-            onClick={() => onSelectMode(mode)}
+            onClick={() => {
+              if (mode === LearningMode.PLAY) {
+                window.location.hash = '#/play';
+              } else {
+                onSelectMode(mode);
+              }
+            }}
             variant={currentMode === mode ? 'primary' : 'secondary'}
             className="text-sm md:text-base"
           >

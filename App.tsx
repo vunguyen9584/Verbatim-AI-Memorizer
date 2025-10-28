@@ -21,6 +21,7 @@ import Loader from './components/common/Loader';
 import { env } from './utils/env';
 import IntroductionPage from './components/IntroductionPage';
 import SettingsPage from './components/SettingsPage';
+import PlayPage from './components/PlayPage';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -48,10 +49,12 @@ const AppContent: React.FC = () => {
   // Simple hash-based routes for special pages
   const [showIntro, setShowIntro] = useState<boolean>(window.location.hash === '#/introduction');
   const [showSettings, setShowSettings] = useState<boolean>(window.location.hash === '#/settings');
+  const [showPlay, setShowPlay] = useState<boolean>(window.location.hash === '#/play');
   useEffect(() => {
     const onHash = () => {
       setShowIntro(window.location.hash === '#/introduction');
       setShowSettings(window.location.hash === '#/settings');
+      setShowPlay(window.location.hash === '#/play');
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -177,6 +180,14 @@ const AppContent: React.FC = () => {
   // Show AuthGate if user is not authenticated
   if (!user) {
     return <AuthGate />;
+  }
+
+  if (showPlay) {
+    return (
+      <div className="min-h-dvh bg-gray-900">
+        <PlayPage tokens={tokens} />
+      </div>
+    );
   }
 
   return (
