@@ -540,7 +540,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
         <>
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex justify-center items-center mb-4">
             {sentencesToType && (
               <div class="text-center p-2 bg-blue-900/30 rounded-lg">
                 {isMultiSentenceTurn ? (
@@ -552,10 +552,6 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
                 )}
               </div>
             )}
-            <div class="flex gap-2">
-              <Button onClick={handleReset} variant="secondary" size="sm">{t('coPlay.reset')}</Button>
-              <Button onClick={handleEndSession} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
-            </div>
           </div>
           <form onSubmit={handleSubmit} class="flex flex-col sm:flex-row items-center gap-3">
             <div class="relative flex-grow w-full sm:w-auto">
@@ -620,7 +616,17 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
               />
               <span class="font-mono text-teal-300 w-10 text-center">{wpm}</span>
             </div>
-            <Button onClick={handleEndSession} variant="secondary" size="sm">{t('coPlay.endSession')}</Button>
+        </div>
+      )}
+
+      {!isFinished && (
+        <div className="mt-auto">
+          <div className="sticky bottom-0 bg-gray-900/80 backdrop-blur border-t border-gray-800 p-3">
+            <div className="flex items-center justify-center gap-3">
+              <Button onClick={handleReset} variant="secondary">{t('coPlay.reset')}</Button>
+              <Button onClick={handleEndSession} variant="secondary">{t('coPlay.endSession')}</Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
