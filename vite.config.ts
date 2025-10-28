@@ -9,7 +9,9 @@ export default defineConfig(({ mode }) => {
       base: './',
       server: {
         port: 3000,
-        host: '0.0.0.0',
+        strictPort: true,
+        host: true,
+        allowedHosts: [env.CF_TUNNEL_DOMAIN, 'localhost']
       },
       plugins: [react()],
       define: {
