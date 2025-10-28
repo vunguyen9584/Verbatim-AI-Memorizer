@@ -174,7 +174,20 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         }
         break;
       case 'mcq_cloze':
-        correct = userAnswer === correctAnswerIndex;
+        // Support both multiple-choice selection (number) and free-text input (string/array)
+        if (typeof userAnswer === 'number') {
+          correct = userAnswer === correctAnswerIndex;
+        } else {
+          const mcqQuiz = currentQuiz as MCQQuizItem;
+          const idx = typeof correctAnswerIndex === 'number' ? correctAnswerIndex : undefined;
+          const correctText = typeof idx === 'number' ? mcqQuiz.options?.[idx]?.text : undefined;
+          const typed = Array.isArray(userAnswer) ? (userAnswer[0] || '') : (userAnswer || '');
+          if (correctText) {
+            correct = typed.trim().toLowerCase() === correctText.trim().toLowerCase();
+          } else {
+            correct = false;
+          }
+        }
         break;
       case 'ordering':
         const orderingQuiz = currentQuiz as OrderingQuizItem;
@@ -288,6 +301,25 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
         );
       case 'mcq_cloze':
         const mcqQuiz = currentQuiz as MCQQuizItem;
+        // If user asked ONLY for fill-in-the-blank, render MCQ as free-text input (fallback)
+        if (selectedQuizTypes.includes('cloze_by_token') && !selectedQuizTypes.includes('mcq_cloze')) {
+          return (
+            <div className="space-y-3 text-center">
+              <p className="mb-4 whitespace-pre-wrap text-left">{mcqQuiz.base_text_with_masks}</p>
+              <input
+                ref={el => inputRefs.current[0] = el}
+                type="text"
+                placeholder={t('quiz.typeMissingLine')}
+                className="bg-gray-700 border-2 border-gray-600 rounded-md p-2 mx-1 text-teal-300 w-full md:w-3/4 focus:border-teal-500 focus:outline-none"
+                value={userAnswer?.[0] || ''}
+                disabled={isAnswered}
+                onChange={(e) => setUserAnswer([e.target.value])}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
+              />
+            </div>
+          );
+        }
+        // Default MCQ rendering (choice buttons)
         return (
             <div className="space-y-3">
                 <p className="mb-4">{mcqQuiz.base_text_with_masks}</p>
@@ -498,7 +530,17 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens }) => {
     
           <div className="mt-auto pt-6 border-t border-gray-700/50 flex justify-end gap-3">
             {!isAnswered ? (
-              <Button onClick={handleCheckAnswer} variant="primary" disabled={userAnswer === null || (Array.isArray(userAnswer) && userAnswer.length === 0)}>{t('quiz.checkAnswer')}</Button>
+              <Button
+                onClick={handleCheckAnswer}
+                variant="primary"
+                disabled={
+                  userAnswer === null ||
+                  (Array.isArray(userAnswer) && (
+                    userAnswer.length === 0 ||
+                    userAnswer.every((v: any) => typeof v === 'string' ? v.trim() === '' : false)
+                  ))
+                }
+              >{t('quiz.checkAnswer')}</Button>
             ) : (
               <Button onClick={handleNext} variant="primary" ref={nextButtonRef}>
                 {currentQuizIndex < quizData.quizzes.length - 1 ? t('quiz.nextQuestion') : t('quiz.finishQuiz')}
