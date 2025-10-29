@@ -6,6 +6,7 @@ import { folderStorageService } from '../services/folderStorageService';
 import Button from './common/Button';
 import { XCircleIcon } from './common/Icon';
 import ConfirmDialog from './common/ConfirmDialog';
+import { extractTextFromImage } from '../services/geminiService';
 
 interface LessonFormProps {
   lesson?: Lesson | null;
@@ -24,6 +25,8 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingFolders, setIsLoadingFolders] = useState(true);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Track initial values to detect unsaved changes accurately
   const initialRef = useRef<{ title: string; content: string; folderId: string }>({ title: '', content: '', folderId: '' });
@@ -179,6 +182,28 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
     }
   };
 
+  const onPickImage = () => fileInputRef.current?.click();
+
+  const handleImageSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsImporting(true);
+    try {
+      const extracted = await extractTextFromImage(file);
+      setContent((prev) => (prev ? `${prev}\n\n${extracted}` : extracted));
+      if (!title.trim()) {
+        const base = file.name.replace(/\.[^.]+$/, '');
+        setTitle(base);
+      }
+    } catch (err) {
+      const key = err instanceof Error ? err.message : 'imageImport.extractError';
+      onError(t(key));
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -239,6 +264,24 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
               <label htmlFor="content" className="block text-sm font-medium text-gray-200 mb-2">
                 {t('lessonForm.contentLabel')}
               </label>
+              <div className="flex items-center gap-3 mb-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelected}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onPickImage}
+                  disabled={isSubmitting || isImporting}
+                >
+                  {isImporting ? t('imageImport.importing') : t('imageImport.importFromImage')}
+                </Button>
+                <span className="text-xs text-gray-500">{t('imageImport.hint')}</span>
+              </div>
               <textarea
                 id="content"
                 value={content}
@@ -266,7 +309,7 @@ const LessonForm: React.FC<LessonFormProps> = ({ lesson, currentFolderId, onClos
             <Button
               type="submit"
               variant="primary"
-              disabled={isSubmitting || !title.trim() || !content.trim() || !folderId}
+              disabled={isSubmitting || isImporting || !title.trim() || !content.trim() || !folderId}
             >
               {isSubmitting 
                 ? t('lessonForm.saving') 

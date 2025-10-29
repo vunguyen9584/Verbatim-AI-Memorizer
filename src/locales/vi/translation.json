@@ -335,4 +335,13 @@
     "about": "Giới thiệu",
     "settings": "Cài đặt"
   }
+  ,
+  "imageImport": {
+    "importFromImage": "Nhập từ ảnh",
+    "importing": "Đang nhập...",
+    "extractError": "Không thể trích xuất văn bản từ ảnh",
+    "invalidType": "Vui lòng chọn tệp ảnh hợp lệ",
+    "emptyResult": "Không phát hiện văn bản trong ảnh.",
+    "hint": "JPG, PNG hoặc WEBP"
+  }
 }

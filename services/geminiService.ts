@@ -241,3 +241,48 @@ export const generateMemoryTips = async (
         throw new Error(messageKey);
     }
 };
+
+// Extract plain text from an image using Gemini Vision
+export const extractTextFromImage = async (file: File): Promise<string> => {
+    if (!file || !file.type.startsWith('image/')) {
+        throw new Error('imageImport.invalidType');
+    }
+    try {
+        const buffer = await file.arrayBuffer();
+        const base64 = (() => {
+            const bytes = new Uint8Array(buffer);
+            const chunkSize = 0x8000;
+            let binary = '';
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                const chunk = bytes.subarray(i, i + chunkSize);
+                binary += String.fromCharCode(...chunk);
+            }
+            return btoa(binary);
+        })();
+
+        const response = await getAI().models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: 'Extract all readable text from this image. Return plain text only.' },
+                        { inlineData: { mimeType: file.type, data: base64 } }
+                    ]
+                }
+            ],
+            config: {
+                responseMimeType: 'text/plain'
+            }
+        });
+
+        const text = (response.text || '').trim();
+        if (!text) {
+            throw new Error('imageImport.emptyResult');
+        }
+        return text;
+    } catch (e) {
+        const messageKey = e instanceof Error ? e.message : 'imageImport.extractError';
+        throw new Error(messageKey);
+    }
+};
