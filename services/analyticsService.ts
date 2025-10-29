@@ -19,9 +19,11 @@ type SessionState = {
 
 const LOCAL_SESSIONS_KEY = 'verbatim_sessions';
 const LOCAL_WEEKLY_KEY = 'verbatim_weekly_summaries';
+const LOCAL_SYNC_INDEX_KEY = 'verbatim_sessions_synced';
 
 class AnalyticsService {
   private current: SessionState | null = null;
+  private autoSyncInit = false;
 
   startSession(params: { mode: LearningMode; lessonId?: string; targetText?: string; idleThresholdMs?: number }): string {
     // End any previous session defensively
@@ -147,6 +149,13 @@ class AnalyticsService {
       const prev = snap.exists() ? deserializeWeekly(snap.data()) : undefined;
       const merged = mergeWeekly(prev, metrics);
       await setDoc(weeklyDoc, serializeWeekly(merged));
+
+      // Mark as synced locally
+      try {
+        const idx = this.readSyncIndex();
+        idx.add(metrics.id);
+        this.writeSyncIndex(idx);
+      } catch {}
     } catch (e) {
       console.warn('Firestore analytics persist failed (offline ok):', e);
     }
@@ -219,6 +228,80 @@ class AnalyticsService {
     } catch {
       return [];
     }
+  }
+
+  /**
+   * Best-effort background sync of unsynced local sessions to Firestore.
+   * Non-throwing; safe to call frequently.
+   */
+  async syncPendingToCloud(): Promise<void> {
+    const uid = authService.getUser()?.uid;
+    if (!uid || !settings.getAnalyticsCloudSyncEnabled()) return;
+    const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    if (!isOnline) return;
+
+    let sessions: SessionMetrics[] = [];
+    try { sessions = await this.getAllSessions(); } catch { sessions = []; }
+    if (!sessions.length) return;
+
+    const idx = this.readSyncIndex();
+    const pending = sessions.filter(s => !idx.has(s.id));
+    if (!pending.length) return;
+
+    for (let i = 0; i < pending.length; i++) {
+      const m = pending[i];
+      try {
+        const sessionsCol = collection(db, 'users', uid, 'sessions');
+        await setDoc(doc(sessionsCol, m.id), serializeForFirestore(m));
+
+        const wk = isoWeekKey(m.startedAt);
+        const weeklyDoc = doc(db, 'users', uid, 'weeklySummaries', wk);
+        const snap = await getDoc(weeklyDoc);
+        const prev = snap.exists() ? deserializeWeekly(snap.data()) : undefined;
+        const merged = mergeWeekly(prev, m);
+        await setDoc(weeklyDoc, serializeWeekly(merged));
+
+        idx.add(m.id);
+        // Yield occasionally to keep UI responsive
+        if (i % 5 === 4) await new Promise(r => setTimeout(r, 0));
+      } catch (e) {
+        // Stop on hard failures but keep what we've synced
+        console.warn('Analytics sync item failed:', e);
+        break;
+      }
+    }
+    try { this.writeSyncIndex(idx); } catch {}
+  }
+
+  /**
+   * Initialize auto sync hooks (idempotent). Triggers on auth changes and online events.
+   */
+  initAutoSync(): void {
+    if (this.autoSyncInit) return;
+    this.autoSyncInit = true;
+    // Fire once on load (deferred)
+    setTimeout(() => { void this.syncPendingToCloud(); }, 0);
+    // Online event
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => { void this.syncPendingToCloud(); });
+    }
+    // Auth changes
+    authService.subscribe(() => { void this.syncPendingToCloud(); });
+  }
+
+  private readSyncIndex(): Set<string> {
+    try {
+      const raw = localStorage.getItem(LOCAL_SYNC_INDEX_KEY);
+      if (!raw) return new Set();
+      const arr: string[] = JSON.parse(raw);
+      return new Set(arr);
+    } catch { return new Set(); }
+  }
+
+  private writeSyncIndex(set: Set<string>): void {
+    try {
+      localStorage.setItem(LOCAL_SYNC_INDEX_KEY, JSON.stringify(Array.from(set)));
+    } catch {}
   }
 }
 

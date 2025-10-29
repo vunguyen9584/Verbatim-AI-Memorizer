@@ -27,6 +27,7 @@ import CoPlaySetupPage from './components/CoPlaySetupPage';
 import CoPlayRunPage from './components/CoPlayRunPage';
 import QuizSetupPage from './components/QuizSetupPage';
 import QuizRunPage from './components/QuizRunPage';
+import { analyticsService } from './services/analyticsService';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -43,6 +44,9 @@ const AppContent: React.FC = () => {
 
   // Subscribe to auth state
   useEffect(() => {
+    // Initialize background analytics sync (idempotent)
+    analyticsService.initAutoSync();
+
     const unsubscribe = authService.subscribe((currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
