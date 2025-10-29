@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CoPlayPlan, CoPlayModeType, CoPlayModeOption } from '../types';
+import { CoPlayPlan, CoPlayModeType, CoPlayModeOption, LearningMode, SessionMetrics } from '../types';
 import { planCoPlay } from '../services/coPlayPlannerService';
 import Loader from './common/Loader';
 import Button from './common/Button';
 import { LightbulbIcon } from './common/Icon';
 import { parseSentences } from '../utils/sentenceParser';
+import { analyticsService } from '../services/analyticsService';
 
 interface CoPlayModeProps {
   text: string;
@@ -52,6 +53,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
   const [incorrectFeedback, setIncorrectFeedback] = useState<React.ReactNode | null>(null);
   const [currentUserSentenceIndex, setCurrentUserSentenceIndex] = useState(0);
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const [recap, setRecap] = useState<SessionMetrics | null>(null);
 
   const [wpm, setWpm] = useState(200);
   const [revealedTokenIndex, setRevealedTokenIndex] = useState(-1);
@@ -83,6 +85,9 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
       
       setPlan(data);
 
+      // analytics: start session after plan created
+      analyticsService.startSession({ mode: LearningMode.CO_PLAY, targetText: tokens.join('') });
+
       const startsWithPause = data.timeline.length > 0 && data.timeline[0].pause_require.length > 0;
       setIsPaused(startsWithPause);
 
@@ -109,6 +114,14 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
       setCurrentUserSentenceIndex(0);
     }
   }, [isPaused, timelineIndex]);
+
+  useEffect(() => {
+    if (sessionCompleted) {
+      (async () => {
+        try { const m = await analyticsService.endSession(); setRecap(m); } catch {}
+      })();
+    }
+  }, [sessionCompleted]);
 
   const currentTimelineItem = plan?.timeline[timelineIndex];
   const pauseInfo = currentTimelineItem?.pause_require[0];
@@ -253,6 +266,8 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
     ).trim().replace(/[.,\s]+$/, '');
 
     if (trimmedUserInput.toLowerCase() === answerForThisSubmission.toLowerCase()) {
+      // analytics: record submission (correct or not, we add what user typed and expected)
+      analyticsService.recordSubmission(trimmedUserInput, answerForThisSubmission);
       setFeedback('correct');
       setIncorrectFeedback(null);
 
@@ -290,14 +305,20 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
     } else {
       setFeedback('incorrect');
       setIncorrectFeedback(generateDiff(trimmedUserInput, answerForThisSubmission));
+      // analytics: also record incorrect attempt
+      analyticsService.recordSubmission(trimmedUserInput, answerForThisSubmission);
     }
   };
   
   const isFinished = sessionCompleted;
 
-  const handleEndSession = () => {
+  const handleEndSession = async () => {
     setPlan(null);
     setSessionCompleted(false);
+    try {
+      const m = await analyticsService.endSession();
+      setRecap(m);
+    } catch {}
   };
 
   const handleModeChange = (type: CoPlayModeType) => {
@@ -537,6 +558,25 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
                 <Button onClick={handleReset} variant="secondary">{t('coPlay.reset')}</Button>
                 <Button onClick={() => setPlan(null)} variant="primary">{t('coPlay.playAgain')}</Button>
               </div>
+              {recap && (
+                <div className="mt-4 p-4 bg-gray-800 rounded-lg text-left max-w-xl mx-auto">
+                  <h4 className="text-teal-300 font-semibold mb-2">{t('analytics.recap.title')}</h4>
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <div className="text-gray-400">{t('analytics.recap.accuracy')}</div>
+                      <div className="text-white font-bold">{Math.round(recap.accuracy * 100)}%</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400">{t('analytics.recap.wpm')}</div>
+                      <div className="text-white font-bold">{Math.round(recap.wpm)}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400">{t('analytics.recap.time')}</div>
+                      <div className="text-white font-bold">{Math.round(recap.activeMs / 1000)}s</div>
+                    </div>
+                  </div>
+                </div>
+              )}
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
         <>
@@ -563,6 +603,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
                   setFeedback(null)
                   setIncorrectFeedback(null)
                 }}
+                onKeyDown={(e) => analyticsService.recordKeystroke(e.key)}
                 placeholder={t('coPlay.typeNextPartPlaceholder')}
                 class={`w-full bg-gray-800 border-2 rounded-lg p-3 text-gray-200 focus:outline-none transition-colors duration-300 pr-12 ${
                   feedback === 'correct' ? 'border-green-500' : 
