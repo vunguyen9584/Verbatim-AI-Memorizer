@@ -335,4 +335,20 @@
     "about": "About",
     "settings": "Settings"
   }
+  ,
+  "imageImport": {
+    "importFromImage": "Import from image",
+    "importing": "Importing...",
+    "extractError": "Failed to extract text from image",
+    "invalidType": "Please select a valid image file",
+    "emptyResult": "No text detected in the image.",
+    "hint": "JPG, PNG, or WEBP"
+  },
+  "pdfImport": {
+    "importFromPdf": "Import from PDF (first 10 pages)",
+    "importing": "Importing...",
+    "extractError": "Failed to extract text from PDF",
+    "invalidType": "Please select a valid PDF file",
+    "emptyResult": "No readable text found in the PDF."
+  }
 }
