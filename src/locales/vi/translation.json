@@ -1,8 +1,8 @@
 {
-  "appTitle": "Verbatim AI Memorizer",
+  "appTitle": "Fluent",
   "pasteTextPrompt": "Dán văn bản của bạn vào bên trái để bắt đầu buổi học.",
   "selectModePrompt": "Chọn một chế độ để bắt đầu.",
-  "headerTitle": "Verbatim <1>AI</1> Memorizer",
+  "headerTitle": "Fluent",
   "openDebugPanel": "Mở bảng gỡ lỗi",
   "coPlay": {
     "invalidPlanError": "Không thể tạo kế hoạch Co-Play hợp lệ.",

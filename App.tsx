@@ -239,7 +239,7 @@ const AppContent: React.FC = () => {
             <BrainCircuitIcon className="w-8 h-8 text-teal-400 mr-3" />
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
               <Trans i18nKey="headerTitle">
-                Verbatim <span className="text-teal-400">AI</span> Memorizer
+                Fluent
               </Trans>
             </h1>
           </div>
