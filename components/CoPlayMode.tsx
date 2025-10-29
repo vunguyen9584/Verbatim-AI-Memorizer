@@ -109,6 +109,13 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
 
+  // If setup is hidden (run page) and no plan is present (e.g., after "Play Again"), auto fetch.
+  useEffect(() => {
+    if (hideSetup && !plan && !loading && !error) {
+      fetchPlan();
+    }
+  }, [hideSetup, plan, loading, error, fetchPlan]);
+
   useEffect(() => {
     if (isPaused && currentTimelineItem?.pause_require.length > 0) {
       setCurrentUserSentenceIndex(0);
@@ -402,7 +409,18 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
     if (hideSetup) {
       return (
         <div className="p-6">
-          <Loader text={t('coPlay.planningSession')} />
+          {loading ? (
+            <Loader text={t('coPlay.planningSession')} />
+          ) : error ? (
+            <div className="p-4 text-center text-red-400">
+              {/^[-_a-zA-Z0-9.]+$/.test(error) ? t(error) : error}
+              <div className="mt-4">
+                <Button onClick={fetchPlan}>{t('coPlay.tryAgain')}</Button>
+              </div>
+            </div>
+          ) : (
+            <Loader text={t('coPlay.planningSession')} />
+          )}
         </div>
       );
     }
@@ -556,7 +574,7 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
               <p className="text-green-400">{t('coPlay.sessionCompleted')}</p>
               <div className="flex justify-center gap-4 mt-4">
                 <Button onClick={handleReset} variant="secondary">{t('coPlay.reset')}</Button>
-                <Button onClick={() => setPlan(null)} variant="primary">{t('coPlay.playAgain')}</Button>
+                <Button onClick={() => { hideSetup ? fetchPlan() : setPlan(null); }} variant="primary">{t('coPlay.playAgain')}</Button>
               </div>
               {recap && (
                 <div className="mt-4 p-4 bg-gray-800 rounded-lg text-left max-w-xl mx-auto">
