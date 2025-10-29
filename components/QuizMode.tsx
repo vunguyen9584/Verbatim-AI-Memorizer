@@ -1,12 +1,13 @@
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
-import { QuizData, ClozeQuizItem, MCQQuizItem, OrderingQuizItem } from '../types';
+import { QuizData, ClozeQuizItem, MCQQuizItem, OrderingQuizItem, LearningMode, SessionMetrics } from '../types';
 import { generateQuizzes } from '../services/geminiService';
 import Loader from './common/Loader';
 import Button from './common/Button';
 import { CheckCircleIcon, XCircleIcon, SparklesIcon, BookOpenIcon } from './common/Icon';
 import { parseSentences } from '../utils/sentenceParser';
+import { analyticsService } from '../services/analyticsService';
 
 interface QuizModeProps {
   text: string;
@@ -44,6 +45,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
   const [isCorrect, setIsCorrect] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
+  const [recap, setRecap] = useState<SessionMetrics | null>(null);
 
   const nextButtonRef = useRef<HTMLButtonElement>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -253,6 +255,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
       }
       setQuizData({ quizzes: combinedLocal.slice(0, numQuestions) });
       setQuizState('active');
+      analyticsService.startSession({ mode: LearningMode.QUIZ, targetText: text });
       return;
     }
 
@@ -305,6 +308,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
 
       setQuizData({ quizzes: combined });
       setQuizState('active');
+      analyticsService.startSession({ mode: LearningMode.QUIZ, targetText: text });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'quiz.generationError');
       console.error(err);
@@ -312,15 +316,18 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
     }
   }, [text, tokens, selectedQuizTypes, numQuestions, t]);
 
-  const handleEndQuiz = () => {
+  const handleEndQuiz = async () => {
       resetQuizState();
       setQuizState('setup');
+      try { const m = await analyticsService.endSession(); setRecap(m); } catch {}
   };
 
   const handleCheckAnswer = () => {
     if (!currentQuiz || userAnswer === null || userAnswer === undefined || (Array.isArray(userAnswer) && userAnswer.length === 0)) return;
 
     let correct = false;
+    let expectedForRecord = '';
+    let typedForRecord = '';
     switch (currentQuiz.type) {
       case 'cloze_by_token':
         const clozeQuiz = currentQuiz as ClozeQuizItem;
@@ -329,9 +336,15 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
             clozeQuiz.blanks.forEach(blank => {
                 correctAnswer = correctAnswer.replace('...', blank.answer_text);
             });
-            correct = (userAnswer?.[0] || '').trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+            const typed = (userAnswer?.[0] || '').trim();
+            correct = typed.toLowerCase() === correctAnswer.trim().toLowerCase();
+            expectedForRecord = correctAnswer;
+            typedForRecord = typed;
         } else { // Easy mode
-            correct = clozeQuiz.blanks.every((blank, index) => (userAnswer[index] || '').trim().toLowerCase() === blank.answer_text.trim().toLowerCase());
+            const typedArr = (userAnswer || []).map((v: string) => (v || '').trim());
+            correct = clozeQuiz.blanks.every((blank, index) => (typedArr[index] || '').toLowerCase() === blank.answer_text.trim().toLowerCase());
+            expectedForRecord = clozeQuiz.blanks.map(b => b.answer_text).join(' ');
+            typedForRecord = typedArr.join(' ');
         }
         break;
       case 'mcq_cloze':
@@ -348,6 +361,8 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
           } else {
             correct = false;
           }
+          if (typed) typedForRecord = typed.trim();
+          if (correctText) expectedForRecord = correctText;
         }
         break;
       case 'ordering':
@@ -355,11 +370,16 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
         const correctOrder = tokens.slice(orderingQuiz.answer_span[0], orderingQuiz.answer_span[1] + 1).join('').replace(/\s/g, '');
         const userAnswerOrder = userAnswer.map((w: any) => w.word).join('').replace(/\s/g, '');
         correct = userAnswerOrder.toLowerCase() === correctOrder.toLowerCase();
+        expectedForRecord = correctOrder;
+        typedForRecord = userAnswer.map((w: any) => w.word).join('');
         break;
     }
     
     setIsCorrect(correct);
     setIsAnswered(true);
+    if (expectedForRecord || typedForRecord) {
+      analyticsService.recordSubmission(typedForRecord, expectedForRecord);
+    }
     if (correct && !isAnswered) { // Only count first attempt
       setCorrectAnswersCount(prev => prev + 1);
     }
@@ -373,6 +393,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
       setCurrentQuizIndex(currentQuizIndex + 1);
     } else {
       setQuizState('results');
+      (async () => { try { const m = await analyticsService.endSession(); setRecap(m); } catch {} })();
     }
   };
   
@@ -402,7 +423,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
                         value={userAnswer?.[0] || ''}
                         disabled={isAnswered}
                         onChange={(e) => setUserAnswer([e.target.value])}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
+                        onKeyDown={(e) => { analyticsService.recordKeystroke(e.key); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
                       />
                     {clozeQuiz.context_after && <p className="text-gray-400 italic mt-2">{clozeQuiz.context_after}</p>}
                 </div>
@@ -426,7 +447,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
                         value={userAnswer?.[0] || ''}
                         disabled={isAnswered}
                         onChange={(e) => setUserAnswer([e.target.value])}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
+                        onKeyDown={(e) => { analyticsService.recordKeystroke(e.key); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
                       />
                     {partialAfter && <p className="text-gray-400 italic mt-2">{partialAfter}</p>}
                 </div>
@@ -454,7 +475,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
                           newAnswers[index] = e.target.value;
                           setUserAnswer(newAnswers);
                         }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
+                        onKeyDown={(e) => { analyticsService.recordKeystroke(e.key); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
                       />
                     )}
                   </React.Fragment>
@@ -478,7 +499,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
                 value={userAnswer?.[0] || ''}
                 disabled={isAnswered}
                 onChange={(e) => setUserAnswer([e.target.value])}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
+                onKeyDown={(e) => { analyticsService.recordKeystroke(e.key); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCheckAnswer(); } }}
               />
             </div>
           );
@@ -736,9 +757,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
   const renderResults = () => {
     if (!quizData) return null;
     return (
-        <div className="p-8 text-center flex flex-col justify-center items-center h-full">
-            <h2 className="text-3xl font-bold text-teal-400 mb-4">{t('quiz.completeTitle')}</h2>
-                        <p className="text-xl text-gray-300 mb-6">
+        <div className="p-6 md:p-8 text-center flex flex-col items-center min-h-[60vh]">
+            <h2 className="text-3xl font-bold text-teal-400 mb-2">{t('quiz.completeTitle')}</h2>
+            <p className="text-lg md:text-xl text-gray-300 mb-4">
                 <Trans
                     i18nKey="quiz.results"
                     values={{ correct: correctAnswersCount, total: quizData.quizzes.length }}
@@ -748,7 +769,28 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
                     }}
                 />
             </p>
-            <Button onClick={handleEndQuiz} variant="primary">{t('quiz.createAnother')}</Button>
+            {recap && (
+              <div className="mt-6 p-5 bg-gray-800/70 rounded-2xl border border-gray-700 text-left w-full max-w-xl shadow-lg">
+                <h4 className="text-teal-300 font-semibold mb-3">{t('analytics.recap.title')}</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <div className="text-gray-400">{t('analytics.recap.accuracy')}</div>
+                    <div className="text-white font-bold text-lg">{Math.round(recap.accuracy * 100)}%</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400">{t('analytics.recap.wpm')}</div>
+                    <div className="text-white font-bold text-lg">{Math.round(recap.wpm)}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400">{t('analytics.recap.time')}</div>
+                    <div className="text-white font-bold text-lg">{Math.round(recap.activeMs / 1000)}s</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="mt-8">
+              <Button onClick={handleEndQuiz} variant="primary" className="w-full sm:w-auto">{t('quiz.createAnother')}</Button>
+            </div>
         </div>
     );
   };

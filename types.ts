@@ -204,3 +204,37 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
 }
+
+// --- ANALYTICS TYPES ---
+
+export interface ErrorStats {
+  totals: { substitutions: number; insertions: number; deletions: number; transpositions: number };
+  perChar: Array<{ char: string; errors: number }>;
+  confusions: Array<{ target: string; typed: string; count: number }>; // char/bigram pairs
+}
+
+export interface SessionMetrics {
+  id: string;
+  uid: string;
+  mode: LearningMode;
+  lessonId?: string;
+  startedAt: Date;
+  endedAt: Date;
+  durationMs: number;
+  activeMs: number;
+  charsTyped: number;
+  backspaces: number;
+  accuracy: number; // 0..1
+  wpm: number;      // computed from activeMs
+  errorStats: ErrorStats;
+}
+
+export interface WeeklySummary {
+  weekKey: string; // e.g., 2025-W44 (ISO week)
+  uid: string;
+  sessions: number;
+  avgWpm: number;
+  avgAccuracy: number; // 0..1
+  totalActiveMs: number;
+  topErrors: ErrorStats;
+}

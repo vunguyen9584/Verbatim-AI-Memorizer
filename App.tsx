@@ -21,11 +21,13 @@ import Loader from './components/common/Loader';
 import { env } from './utils/env';
 import IntroductionPage from './components/IntroductionPage';
 import SettingsPage from './components/SettingsPage';
+import StatisticsPage from './components/StatisticsPage';
 import PlayPage from './components/PlayPage';
 import CoPlaySetupPage from './components/CoPlaySetupPage';
 import CoPlayRunPage from './components/CoPlayRunPage';
 import QuizSetupPage from './components/QuizSetupPage';
 import QuizRunPage from './components/QuizRunPage';
+import { analyticsService } from './services/analyticsService';
 
 const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -42,6 +44,9 @@ const AppContent: React.FC = () => {
 
   // Subscribe to auth state
   useEffect(() => {
+    // Initialize background analytics sync (idempotent)
+    analyticsService.initAutoSync();
+
     const unsubscribe = authService.subscribe((currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
@@ -58,6 +63,7 @@ const AppContent: React.FC = () => {
   const [showQuizRun, setShowQuizRun] = useState<boolean>(window.location.hash.startsWith('#/quiz'));
   const [showCoPlaySetup, setShowCoPlaySetup] = useState<boolean>(window.location.hash === '#/co-play-setup');
   const [showCoPlayRun, setShowCoPlayRun] = useState<boolean>(window.location.hash.startsWith('#/co-play'));
+  const [showStatistics, setShowStatistics] = useState<boolean>(window.location.hash === '#/statistics');
   useEffect(() => {
     const onHash = () => {
       setShowIntro(window.location.hash === '#/introduction');
@@ -67,6 +73,7 @@ const AppContent: React.FC = () => {
       setShowQuizRun(window.location.hash.startsWith('#/quiz'));
       setShowCoPlaySetup(window.location.hash === '#/co-play-setup');
       setShowCoPlayRun(window.location.hash.startsWith('#/co-play'));
+      setShowStatistics(window.location.hash === '#/statistics');
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -176,6 +183,10 @@ const AppContent: React.FC = () => {
 
   if (showSettings) {
     return <SettingsPage />;
+  }
+
+  if (showStatistics) {
+    return <StatisticsPage />;
   }
 
   // Show loading state while checking auth

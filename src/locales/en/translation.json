@@ -333,7 +333,8 @@
   ,
   "menu": {
     "about": "About",
-    "settings": "Settings"
+    "settings": "Settings",
+    "statistics": "Statistics"
   }
   ,
   "imageImport": {
@@ -350,5 +351,43 @@
     "extractError": "Failed to extract text from PDF",
     "invalidType": "Please select a valid PDF file",
     "emptyResult": "No readable text found in the PDF."
+  },
+  "analytics": {
+    "stats": {
+      "title": "Statistics",
+      "overall": "Overall",
+      "totalSessions": "Total sessions",
+      "avgWpm": "Average WPM",
+      "avgAccuracy": "Average accuracy",
+      "totalActiveTime": "Total active time",
+      "byMode": "By mode",
+      "clearAll": "Clear all data",
+      "clearConfirmTitle": "Clear analytics?",
+      "clearConfirmText": "This will delete all local analytics data and synced data if cloud sync is enabled. This cannot be undone.",
+      "clear": "Clear",
+      "noData": "No sessions yet"
+    },
+    "settings": {
+      "title": "Analytics",
+      "desc": "Accuracy, WPM, and error patterns are computed locally; optionally sync to your account.",
+      "cloudSync": "Cloud Sync",
+      "cloudSyncHint": "Store session summaries securely in your account (uses Firestore when signed in).",
+      "on": "On",
+      "off": "Off",
+      "syncEnabled": "Cloud sync enabled",
+      "syncDisabled": "Cloud sync disabled",
+      "clearData": "Clear Analytics Data",
+      "clearHint": "Delete local data and your synced data for this account.",
+      "clearAction": "Clear",
+      "cleared": "Analytics data cleared",
+      "clearError": "Failed to clear analytics data"
+    },
+    "recap": {
+      "title": "Session Recap",
+      "accuracy": "Accuracy",
+      "wpm": "WPM",
+      "time": "Active time",
+      "topErrors": "Top errors"
+    }
   }
 }
