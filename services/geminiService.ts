@@ -286,3 +286,39 @@ export const extractTextFromImage = async (file: File): Promise<string> => {
         throw new Error(messageKey);
     }
 };
+
+// Extract text from a PDF using Gemini; only first `maxPages` pages are considered
+export const extractTextFromPdf = async (file: File, maxPages: number = 10): Promise<string> => {
+    if (!file || file.type !== 'application/pdf') {
+        throw new Error('pdfImport.invalidType');
+    }
+    if (maxPages < 1) maxPages = 1;
+    try {
+        const buffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        const chunkSize = 0x8000;
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
+        }
+        const base64 = btoa(binary);
+
+        const prompt = `Extract all readable text from the first ${maxPages} pages of this PDF. If the file has more pages, ignore anything after page ${maxPages}. Return plain text only.`;
+
+        const response = await getAI().models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+                { role: 'user', parts: [ { text: prompt }, { inlineData: { mimeType: 'application/pdf', data: base64 } } ] }
+            ],
+            config: { responseMimeType: 'text/plain' }
+        });
+
+        const text = (response.text || '').trim();
+        if (!text) throw new Error('pdfImport.emptyResult');
+        return text;
+    } catch (e) {
+        const key = e instanceof Error ? e.message : 'pdfImport.extractError';
+        throw new Error(key);
+    }
+};
