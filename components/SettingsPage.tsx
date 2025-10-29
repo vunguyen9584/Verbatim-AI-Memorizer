@@ -75,6 +75,10 @@ const SettingsPage: React.FC = () => {
     setAnalyticsSync(next);
     settings.setAnalyticsCloudSyncEnabled(next);
     showToast({ type: 'success', message: next ? t('analytics.settings.syncEnabled') : t('analytics.settings.syncDisabled') });
+    if (next) {
+      // Kick off a background backfill when enabling cloud sync
+      setTimeout(() => { void analyticsService.syncPendingToCloud(); }, 0);
+    }
   };
 
   const handleClearAnalytics = async () => {

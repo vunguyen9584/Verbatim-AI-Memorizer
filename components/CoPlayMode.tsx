@@ -569,32 +569,32 @@ const CoPlayMode: React.FC<CoPlayModeProps> = ({ text, tokens, initialModeOption
       </div>
 
       {isFinished ? (
-          <div className="text-center p-4 bg-green-900/30 rounded-lg">
-              <h3 className="text-2xl font-bold text-green-300">{t('coPlay.congratulations')}</h3>
-              <p className="text-green-400">{t('coPlay.sessionCompleted')}</p>
-              <div className="flex justify-center gap-4 mt-4">
-                <Button onClick={handleReset} variant="secondary">{t('coPlay.reset')}</Button>
-                <Button onClick={() => { hideSetup ? fetchPlan() : setPlan(null); }} variant="primary">{t('coPlay.playAgain')}</Button>
-              </div>
+          <div className="text-center p-6 md:p-8 bg-gray-900/60 rounded-2xl border border-gray-800">
+              <h3 className="text-2xl font-bold text-green-300 mb-1">{t('coPlay.congratulations')}</h3>
+              <p className="text-green-400 mb-4">{t('coPlay.sessionCompleted')}</p>
               {recap && (
-                <div className="mt-4 p-4 bg-gray-800 rounded-lg text-left max-w-xl mx-auto">
-                  <h4 className="text-teal-300 font-semibold mb-2">{t('analytics.recap.title')}</h4>
-                  <div className="grid grid-cols-3 gap-3 text-sm">
+                <div className="mt-2 p-5 bg-gray-800/70 rounded-2xl text-left max-w-xl mx-auto border border-gray-700 shadow-lg">
+                  <h4 className="text-teal-300 font-semibold mb-3">{t('analytics.recap.title')}</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                     <div>
                       <div className="text-gray-400">{t('analytics.recap.accuracy')}</div>
-                      <div className="text-white font-bold">{Math.round(recap.accuracy * 100)}%</div>
+                      <div className="text-white font-bold text-lg">{Math.round(recap.accuracy * 100)}%</div>
                     </div>
                     <div>
                       <div className="text-gray-400">{t('analytics.recap.wpm')}</div>
-                      <div className="text-white font-bold">{Math.round(recap.wpm)}</div>
+                      <div className="text-white font-bold text-lg">{Math.round(recap.wpm)}</div>
                     </div>
                     <div>
                       <div className="text-gray-400">{t('analytics.recap.time')}</div>
-                      <div className="text-white font-bold">{Math.round(recap.activeMs / 1000)}s</div>
+                      <div className="text-white font-bold text-lg">{Math.round(recap.activeMs / 1000)}s</div>
                     </div>
                   </div>
                 </div>
               )}
+              <div className="flex flex-wrap justify-center gap-3 mt-8">
+                <Button onClick={handleReset} variant="secondary" className="w-full sm:w-auto">{t('coPlay.reset')}</Button>
+                <Button onClick={() => { hideSetup ? fetchPlan() : setPlan(null); }} variant="primary" className="w-full sm:w-auto">{t('coPlay.playAgain')}</Button>
+              </div>
           </div>
       ) : isPaused && currentTimelineItem?.pause_require.length > 0 ? (
         <>

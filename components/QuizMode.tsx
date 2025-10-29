@@ -757,9 +757,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
   const renderResults = () => {
     if (!quizData) return null;
     return (
-        <div className="p-8 text-center flex flex-col justify-center items-center h-full">
-            <h2 className="text-3xl font-bold text-teal-400 mb-4">{t('quiz.completeTitle')}</h2>
-                        <p className="text-xl text-gray-300 mb-6">
+        <div className="p-6 md:p-8 text-center flex flex-col items-center min-h-[60vh]">
+            <h2 className="text-3xl font-bold text-teal-400 mb-2">{t('quiz.completeTitle')}</h2>
+            <p className="text-lg md:text-xl text-gray-300 mb-4">
                 <Trans
                     i18nKey="quiz.results"
                     values={{ correct: correctAnswersCount, total: quizData.quizzes.length }}
@@ -770,25 +770,27 @@ const QuizMode: React.FC<QuizModeProps> = ({ text, tokens, initialSelectedQuizTy
                 />
             </p>
             {recap && (
-              <div className="mt-2 p-4 bg-gray-800 rounded-lg text-left">
-                <h4 className="text-teal-300 font-semibold mb-2">{t('analytics.recap.title')}</h4>
-                <div className="grid grid-cols-3 gap-3 text-sm">
+              <div className="mt-6 p-5 bg-gray-800/70 rounded-2xl border border-gray-700 text-left w-full max-w-xl shadow-lg">
+                <h4 className="text-teal-300 font-semibold mb-3">{t('analytics.recap.title')}</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                   <div>
                     <div className="text-gray-400">{t('analytics.recap.accuracy')}</div>
-                    <div className="text-white font-bold">{Math.round(recap.accuracy * 100)}%</div>
+                    <div className="text-white font-bold text-lg">{Math.round(recap.accuracy * 100)}%</div>
                   </div>
                   <div>
                     <div className="text-gray-400">{t('analytics.recap.wpm')}</div>
-                    <div className="text-white font-bold">{Math.round(recap.wpm)}</div>
+                    <div className="text-white font-bold text-lg">{Math.round(recap.wpm)}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">{t('analytics.recap.time')}</div>
-                    <div className="text-white font-bold">{Math.round(recap.activeMs / 1000)}s</div>
+                    <div className="text-white font-bold text-lg">{Math.round(recap.activeMs / 1000)}s</div>
                   </div>
                 </div>
               </div>
             )}
-            <Button onClick={handleEndQuiz} variant="primary">{t('quiz.createAnother')}</Button>
+            <div className="mt-8">
+              <Button onClick={handleEndQuiz} variant="primary" className="w-full sm:w-auto">{t('quiz.createAnother')}</Button>
+            </div>
         </div>
     );
   };
