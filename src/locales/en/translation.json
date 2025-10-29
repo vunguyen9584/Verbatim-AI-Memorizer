@@ -1,8 +1,8 @@
 {
-  "appTitle": "Verbatim AI Memorizer",
+  "appTitle": "Fluent",
   "pasteTextPrompt": "Paste your text on the left to begin your learning session.",
   "selectModePrompt": "Select a mode to start.",
-  "headerTitle": "Verbatim <1>AI</1> Memorizer",
+  "headerTitle": "Fluent",
   "openDebugPanel": "Open Debug Panel",
   "coPlay": {
     "invalidPlanError": "Failed to generate a valid Co-Play plan.",
@@ -249,7 +249,7 @@
     "close": "Close notification"
   },
   "introduction": {
-    "title": "Introduction to Verbatim AI Memorizer",
+    "title": "Introduction to Fluent",
     "subtitle": "Memorize speeches, scriptures, poems, scripts, definitions, and more with AI-powered practice.",
     "whoTitle": "Who is this for?",
     "who1": "Speakers and students memorizing talks or presentations",

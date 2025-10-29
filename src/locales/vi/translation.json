@@ -1,8 +1,8 @@
 {
-  "appTitle": "Verbatim AI Memorizer",
+  "appTitle": "Fluent",
   "pasteTextPrompt": "Dán văn bản của bạn vào bên trái để bắt đầu buổi học.",
   "selectModePrompt": "Chọn một chế độ để bắt đầu.",
-  "headerTitle": "Verbatim <1>AI</1> Memorizer",
+  "headerTitle": "Fluent",
   "openDebugPanel": "Mở bảng gỡ lỗi",
   "coPlay": {
     "invalidPlanError": "Không thể tạo kế hoạch Co-Play hợp lệ.",
@@ -249,7 +249,7 @@
     "close": "Đóng thông báo"
   },
   "introduction": {
-    "title": "Giới thiệu Verbatim AI Memorizer",
+    "title": "Giới thiệu Fluent",
     "subtitle": "Ghi nhớ bài phát biểu, Kinh Thánh, thơ, kịch bản, định nghĩa... với AI.",
     "whoTitle": "Dành cho ai",
     "who1": "Diễn giả, học sinh ôn thuyết trình",
