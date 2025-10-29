@@ -333,7 +333,8 @@
   ,
   "menu": {
     "about": "About",
-    "settings": "Settings"
+    "settings": "Settings",
+    "statistics": "Statistics"
   }
   ,
   "imageImport": {
@@ -352,6 +353,20 @@
     "emptyResult": "No readable text found in the PDF."
   },
   "analytics": {
+    "stats": {
+      "title": "Statistics",
+      "overall": "Overall",
+      "totalSessions": "Total sessions",
+      "avgWpm": "Average WPM",
+      "avgAccuracy": "Average accuracy",
+      "totalActiveTime": "Total active time",
+      "byMode": "By mode",
+      "clearAll": "Clear all data",
+      "clearConfirmTitle": "Clear analytics?",
+      "clearConfirmText": "This will delete all local analytics data and synced data if cloud sync is enabled. This cannot be undone.",
+      "clear": "Clear",
+      "noData": "No sessions yet"
+    },
     "settings": {
       "title": "Analytics",
       "desc": "Accuracy, WPM, and error patterns are computed locally; optionally sync to your account.",

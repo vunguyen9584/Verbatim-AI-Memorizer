@@ -203,6 +203,23 @@ class AnalyticsService {
       console.warn('Failed clearing Firestore analytics:', e);
     }
   }
+
+  async getAllSessions(): Promise<SessionMetrics[]> {
+    try {
+      const raw = localStorage.getItem(LOCAL_SESSIONS_KEY);
+      const arr: any[] = raw ? JSON.parse(raw) : [];
+      const sessions: SessionMetrics[] = arr.map((m: any) => ({
+        ...m,
+        startedAt: new Date(m.startedAt),
+        endedAt: new Date(m.endedAt),
+      }));
+      // Newest first
+      sessions.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+      return sessions;
+    } catch {
+      return [];
+    }
+  }
 }
 
 // Singleton

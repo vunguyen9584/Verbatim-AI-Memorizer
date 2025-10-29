@@ -333,7 +333,8 @@
   ,
   "menu": {
     "about": "Giới thiệu",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "statistics": "Thống kê"
   }
   ,
   "imageImport": {
@@ -352,6 +353,20 @@
     "emptyResult": "Không tìm thấy văn bản có thể đọc trong PDF."
   },
   "analytics": {
+    "stats": {
+      "title": "Thống kê",
+      "overall": "Tổng quan",
+      "totalSessions": "Tổng số phiên",
+      "avgWpm": "WPM trung bình",
+      "avgAccuracy": "Độ chính xác trung bình",
+      "totalActiveTime": "Tổng thời gian hoạt động",
+      "byMode": "Theo chế độ",
+      "clearAll": "Xóa tất cả dữ liệu",
+      "clearConfirmTitle": "Xóa dữ liệu phân tích?",
+      "clearConfirmText": "Thao tác này sẽ xóa dữ liệu phân tích cục bộ và dữ liệu đã đồng bộ (nếu bật đám mây). Không thể hoàn tác.",
+      "clear": "Xóa",
+      "noData": "Chưa có phiên nào"
+    },
     "settings": {
       "title": "Phân tích học tập",
       "desc": "Độ chính xác, WPM và mẫu lỗi được tính cục bộ; có thể đồng bộ lên tài khoản của bạn.",
